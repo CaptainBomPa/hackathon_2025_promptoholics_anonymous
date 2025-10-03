@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile default="true" name="Default" enabled="true" />
+      <profile name="Gradle Imported" enabled="true">
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.40/398c6d2d7c42c96b65e78d2ddc9be0058c163453/lombok-1.18.40.jar" />
+        </processorPath>
+        <module name="ApiBackend.main" />
+        <module name="ApiBackend.spring-ai-module.main" />
+      </profile>
+    </annotationProcessing>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="ApiBackend" options="-parameters" />
+      <module name="ApiBackend.main" options="-parameters" />
+      <module name="ApiBackend.spring-ai-module" options="-parameters" />
+      <module name="ApiBackend.spring-ai-module.main" options="-parameters" />
+      <module name="ApiBackend.spring-ai-module.test" options="-parameters" />
+      <module name="ApiBackend.test" options="-parameters" />
+    </option>
+  </component>
+</project>
