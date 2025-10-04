@@ -180,17 +180,37 @@ components:
         postalCode:
           type: string
           nullable: true
-        additionalSickLeaves:
+        additionalWorkYears:
+          type: integer
+          nullable: true
+        additionalSickLeaveDaysPerYear:
+          type: integer
+        additionalSalaryChanges:
           type: array
           items:
             type: object
             properties:
+              changeType:
+                type: string
+                enum:
+                  - BREAK
+                  - WORK
               startDate:
                 type: string
                 format: date-time
               endDate:
                 type: string
                 format: date-time
+              salary:
+                type: number
+                format: float
+        contractType:
+          type: string
+          enum:
+            - B2B
+            - EMPLOYMENT_CONTRACT
+            - MANDATE_CONTRACT
+            - CONTRACT_FOR_SPECIFIC_WORK
 
     PensionCalculationResponse:
       type: object
