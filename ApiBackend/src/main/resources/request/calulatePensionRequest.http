@@ -3,10 +3,10 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "expectedPensionPLN": 10000.0,
+  "expectedPensionPLN": 12000.0,
   "age": 35,
   "sex": "F",
-  "grossSalaryPLN": 14500.0,
+  "grossSalaryPLN": 22500.0,
   "startYear": 2012,
   "plannedEndYear": 2060,
   "includeSickLeave": true,
