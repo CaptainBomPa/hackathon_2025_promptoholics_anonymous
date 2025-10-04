@@ -295,8 +295,9 @@ export const DashboardProvider = ({ children, initialData = {} }) => {
       return;
     }
 
-    // Clear validation errors
-    Object.keys(validation.errors).forEach(field => {
+    // Clear validation errors when validation passes
+    const validationFields = ['age', 'grossSalary', 'startYear', 'plannedEndYear', 'wageGrowthRate', 'inflationRate'];
+    validationFields.forEach(field => {
       dispatch({ type: DASHBOARD_ACTIONS.CLEAR_ERROR, payload: field });
     });
 

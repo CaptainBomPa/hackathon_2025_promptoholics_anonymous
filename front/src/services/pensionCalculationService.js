@@ -115,7 +115,7 @@ const transformDashboardToApiFormat = (parameters) => {
     },
     
     // Salary Timeline
-    salaryTimeline: salaryTimeline || [],
+    salaryTimeline: salaryTimeline?.entries || [],
   };
 };
 
@@ -191,17 +191,21 @@ function calculateSalaryProgression(basic, salaryTimeline, indexation) {
   const progression = [];
   const currentYear = new Date().getFullYear();
   
+  // Ensure salaryTimeline has proper structure
+  const timeline = salaryTimeline || { entries: [], useCustomValues: false };
+  const entries = timeline.entries || [];
+  
   for (let year = basic.startYear; year <= basic.plannedEndYear; year++) {
     // Check if user provided custom salary for this year
-    const customEntry = salaryTimeline.entries.find(entry => entry.year === year);
+    const customEntry = entries.find(entry => entry.year === year);
     
     let amount;
-    if (customEntry && salaryTimeline.useCustomValues) {
+    if (customEntry && timeline.useCustomValues) {
       amount = customEntry.amount;
     } else {
       // Calculate indexed salary
       const yearsFromStart = year - basic.startYear;
-      const growthRate = indexation.wageGrowthRate / 100;
+      const growthRate = (indexation?.wageGrowthRate || 3.5) / 100;
       amount = basic.grossSalary * Math.pow(1 + growthRate, yearsFromStart);
     }
 
@@ -220,7 +224,10 @@ function calculateSalaryProgression(basic, salaryTimeline, indexation) {
  * Calculate sick leave impact on pension
  */
 function calculateSickLeaveImpact(sickLeave, gender) {
-  if (sickLeave.mode === 'averaged') {
+  // Ensure sickLeave has proper structure
+  const leave = sickLeave || { mode: 'averaged' };
+  
+  if (leave.mode === 'averaged') {
     // Use statistical averages
     const averageDaysPerYear = gender === 'F' ? 8.5 : 6.2; // Mock gender-based averages
     const impactOnContributions = averageDaysPerYear * 0.006; // Rough calculation
@@ -233,10 +240,12 @@ function calculateSickLeaveImpact(sickLeave, gender) {
     };
   } else {
     // Calculate based on custom periods
+    const historicalPeriods = leave.historicalPeriods || [];
+    const projectedPeriods = leave.projectedPeriods || [];
     const totalSickDays = [
-      ...sickLeave.historicalPeriods,
-      ...sickLeave.projectedPeriods
-    ].reduce((total, period) => total + period.daysCount, 0);
+      ...historicalPeriods,
+      ...projectedPeriods
+    ].reduce((total, period) => total + (period.daysCount || 0), 0);
 
     const impactOnContributions = totalSickDays * 0.002; // Rough calculation
     
@@ -254,7 +263,9 @@ function calculateSickLeaveImpact(sickLeave, gender) {
  */
 function calculateZUSAccountGrowth(salaryProgression, zusAccount, startYear, endYear) {
   const growth = [];
-  let currentBalance = zusAccount.currentBalance || 0;
+  // Ensure zusAccount has proper structure
+  const account = zusAccount || { accountBalance: 0, currentBalance: 0, voluntaryContributions: [] };
+  let currentBalance = account.accountBalance || account.currentBalance || 0;
   
   // Contribution rate (simplified)
   const contributionRate = 0.1976; // 19.76% to pension account
@@ -265,8 +276,9 @@ function calculateZUSAccountGrowth(salaryProgression, zusAccount, startYear, end
     const annualContribution = annualSalary * contributionRate;
     
     // Add voluntary contributions if any
-    const voluntaryContribution = zusAccount.voluntaryContributions
-      ?.find(vc => vc.year === year)?.amount || 0;
+    const voluntaryContributions = account.voluntaryContributions || [];
+    const voluntaryContribution = voluntaryContributions
+      .find(vc => vc.year === year)?.amount || 0;
     
     currentBalance += annualContribution + voluntaryContribution;
     
@@ -345,28 +357,33 @@ export const validateParameters = (parameters) => {
   const errors = {};
   
   // Basic parameters validation
-  if (!parameters.basic.age || parameters.basic.age < 16 || parameters.basic.age > 80) {
+  const age = parameters.basic?.age;
+  if (age === undefined || age === null || age < 16 || age > 80) {
     errors.age = 'Wiek musi być między 16 a 80 lat';
   }
   
-  if (!parameters.basic.grossSalary || parameters.basic.grossSalary <= 0) {
+  const grossSalary = parameters.basic?.grossSalary;
+  if (grossSalary === undefined || grossSalary === null || grossSalary <= 0) {
     errors.grossSalary = 'Wynagrodzenie musi być większe od 0';
   }
   
-  if (!parameters.basic.startYear || parameters.basic.startYear < 1960) {
+  const startYear = parameters.basic?.startYear;
+  if (startYear === undefined || startYear === null || startYear < 1960) {
     errors.startYear = 'Rok rozpoczęcia pracy nie może być wcześniejszy niż 1960';
   }
   
-  if (!parameters.basic.plannedEndYear || parameters.basic.plannedEndYear <= parameters.basic.startYear) {
+  const plannedEndYear = parameters.basic?.plannedEndYear;
+  if (plannedEndYear === undefined || plannedEndYear === null || (startYear && plannedEndYear <= startYear)) {
     errors.plannedEndYear = 'Rok zakończenia pracy musi być późniejszy niż rok rozpoczęcia';
   }
   
   // Indexation validation
-  if (parameters.indexation.wageGrowthRate < 0 || parameters.indexation.wageGrowthRate > 20) {
+  const indexation = parameters.indexation || {};
+  if (indexation.wageGrowthRate !== undefined && (indexation.wageGrowthRate < 0 || indexation.wageGrowthRate > 20)) {
     errors.wageGrowthRate = 'Wzrost płac musi być między 0% a 20%';
   }
   
-  if (parameters.indexation.inflationRate < 0 || parameters.indexation.inflationRate > 15) {
+  if (indexation.inflationRate !== undefined && (indexation.inflationRate < 0 || indexation.inflationRate > 15)) {
     errors.inflationRate = 'Inflacja musi być między 0% a 15%';
   }
   
