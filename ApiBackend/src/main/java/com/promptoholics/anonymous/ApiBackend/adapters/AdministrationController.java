@@ -4,6 +4,7 @@ import com.promptoholics.anonymous.ApiBackend.api.AdministrationApi;
 import com.promptoholics.anonymous.ApiBackend.application.AdministrationFacade;
 import com.promptoholics.anonymous.ApiBackend.schemas.dtos.AdminReportCreateRequestDto;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
@@ -14,12 +15,14 @@ import org.springframework.web.bind.annotation.RestController;
 @Component
 @RestController
 @RequiredArgsConstructor
+@Slf4j
 public class AdministrationController implements AdministrationApi {
 
     private final AdministrationFacade administrationFacade;
 
     @Override
     public ResponseEntity<Resource> generateAdminReport(AdminReportCreateRequestDto reportCreateRequestDto) {
+        log.info("[REQUEST] generateAdminReport with: {}", reportCreateRequestDto);
         ByteArrayResource resource = administrationFacade.generateAdminReport(reportCreateRequestDto.getDateFrom(), reportCreateRequestDto.getDateTo());
 
         return ResponseEntity.ok()
