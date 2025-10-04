@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS pension_calculation (
     accumulated_funds_total DOUBLE PRECISION,
     actual_pension DOUBLE PRECISION,
     inflation_adjusted_pension DOUBLE PRECISION,
-    postal_code VARCHAR(16)
+    postal_code VARCHAR(16),
+    version INTEGER NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_pension_usage_date ON pension_calculation(created_at);
