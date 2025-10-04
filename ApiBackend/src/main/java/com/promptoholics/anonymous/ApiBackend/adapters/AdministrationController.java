@@ -20,7 +20,7 @@ public class AdministrationController implements AdministrationApi {
 
     @Override
     public ResponseEntity<Resource> generateAdminReport(AdminReportCreateRequestDto reportCreateRequestDto) {
-        ByteArrayResource resource = administrationFacade.generateAdminReport();
+        ByteArrayResource resource = administrationFacade.generateAdminReport(reportCreateRequestDto.getDateFrom(), reportCreateRequestDto.getDateTo());
 
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=\"admin-report.xls\"")

@@ -6,15 +6,16 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.time.LocalDate;
 
 @Component
 @RequiredArgsConstructor
 public class AdministrationFacade {
     private final ReportServiceXls reportServiceXls;
 
-    public ByteArrayResource generateAdminReport() {
+    public ByteArrayResource generateAdminReport(LocalDate dateFrom, LocalDate dateTo) {
         try {
-            return reportServiceXls.generateReportInMemory();
+            return reportServiceXls.generateReportInMemory(dateFrom, dateTo);
         } catch (IOException e) {
             throw new RuntimeException("Błąd generowania raportu", e);
         }
