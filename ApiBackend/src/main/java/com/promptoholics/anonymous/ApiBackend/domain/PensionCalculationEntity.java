@@ -3,10 +3,12 @@ package com.promptoholics.anonymous.ApiBackend.domain;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import java.time.Instant;
-import java.util.UUID;
+import lombok.Getter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(
@@ -16,6 +18,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
         }
 )
 @EntityListeners(AuditingEntityListener.class)
+@Getter
 public class PensionCalculationEntity {
 
     @Id
