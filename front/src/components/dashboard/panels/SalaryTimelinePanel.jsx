@@ -33,7 +33,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { pl } from 'date-fns/locale';
-// import { useDashboard } from '../../../contexts/DashboardContext'; // TODO: Integrate with context
+import { useDashboard } from '../../../contexts/DashboardContext';
 import { zusColors } from '../../../constants/zus-colors';
 
 /**
@@ -41,7 +41,8 @@ import { zusColors } from '../../../constants/zus-colors';
  * Manages salary periods and breaks with editable table
  */
 const SalaryTimelinePanel = () => {
-  // const { state, actions } = useDashboard(); // TODO: Integrate with context
+  const { state, actions } = useDashboard();
+  const { salaryTimeline } = state.parameters;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
   const [formData, setFormData] = useState({

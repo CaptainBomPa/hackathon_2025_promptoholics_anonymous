@@ -20,7 +20,7 @@ import {
   Edit as EditIcon,
   Info as InfoIcon,
 } from '@mui/icons-material';
-// import { useDashboard } from '../../../contexts/DashboardContext'; // TODO: Integrate with context
+import { useDashboard } from '../../../contexts/DashboardContext';
 import { zusColors } from '../../../constants/zus-colors';
 
 /**
@@ -28,14 +28,18 @@ import { zusColors } from '../../../constants/zus-colors';
  * Manages sick leave calculation options with three modes
  */
 const SickLeavePanel = () => {
-  // const { state, actions } = useDashboard(); // TODO: Integrate with context
+  const { state, actions } = useDashboard();
+  const { sickLeave } = state.parameters;
   
-  const [sickLeaveMode, setSickLeaveMode] = useState('averaged'); // 'averaged', 'none', 'custom'
-  const [customDays, setCustomDays] = useState('');
+  const [sickLeaveMode, setSickLeaveMode] = useState(sickLeave?.mode || 'averaged');
+  const [customDays, setCustomDays] = useState(sickLeave?.customDays || '');
 
   const handleModeChange = (event) => {
     const newMode = event.target.value;
     setSickLeaveMode(newMode);
+    
+    // Update context
+    actions.setSickLeaveMode(newMode);
     
     // Clear custom days when switching away from custom mode
     if (newMode !== 'custom') {
@@ -48,6 +52,12 @@ const SickLeavePanel = () => {
     // Allow only numbers and limit to reasonable range
     if (value === '' || (/^\d+$/.test(value) && parseInt(value) <= 365)) {
       setCustomDays(value);
+      
+      // Update context with custom days
+      actions.updateSickLeaveParameters({
+        mode: 'custom',
+        customDays: parseInt(value) || 0,
+      });
     }
   };
 

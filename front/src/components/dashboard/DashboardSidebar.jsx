@@ -289,39 +289,56 @@ const DashboardSidebar = ({ open, onClose }) => {
         ))}
       </List>
 
-      {/* Sidebar footer */}
+      {/* Auto-calculation status */}
       <Box
         sx={{
           p: 3,
           m: 2,
           borderRadius: 2,
-          background: `linear-gradient(135deg, ${zusColors.info}08 0%, ${zusColors.secondary}05 100%)`,
-          border: `1px solid ${zusColors.info}20`,
-          boxShadow: `0 2px 8px ${zusColors.info}10`,
+          background: state.uiState.isCalculating
+            ? `linear-gradient(135deg, ${zusColors.primary}08 0%, ${zusColors.info}05 100%)`
+            : `linear-gradient(135deg, ${zusColors.success}08 0%, ${zusColors.info}05 100%)`,
+          border: `1px solid ${state.uiState.isCalculating ? zusColors.primary : zusColors.success}20`,
+          boxShadow: `0 2px 8px ${state.uiState.isCalculating ? zusColors.primary : zusColors.success}10`,
+          transition: 'all 0.3s ease-in-out',
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
           <Box
             sx={{
               p: 0.5,
               borderRadius: 1,
-              background: `linear-gradient(135deg, ${zusColors.info} 0%, ${zusColors.secondary} 100%)`,
+              background: state.uiState.isCalculating
+                ? `linear-gradient(135deg, ${zusColors.primary} 0%, ${zusColors.info} 100%)`
+                : `linear-gradient(135deg, ${zusColors.success} 0%, ${zusColors.info} 100%)`,
             }}
           >
             <Typography variant="caption" sx={{ color: 'white', fontWeight: 600 }}>
-              ⏱️
+              {state.uiState.isCalculating ? '🔄' : '✅'}
             </Typography>
           </Box>
           <Typography variant="body2" sx={{ fontWeight: 600, color: zusColors.dark }}>
-            Ostatnie przeliczenie
+            {state.uiState.isCalculating ? 'Przeliczanie...' : 'Auto-przeliczanie'}
           </Typography>
         </Box>
-        <Typography variant="body2" sx={{ color: zusColors.dark, opacity: 0.8, fontWeight: 500 }}>
-          {state.uiState.lastCalculation
-            ? new Date(state.uiState.lastCalculation).toLocaleString('pl-PL')
-            : '🔄 Brak danych'
-          }
-        </Typography>
+
+        {state.uiState.isCalculating ? (
+          <Typography variant="body2" sx={{ color: zusColors.primary, fontWeight: 500 }}>
+            Aktualizowanie wyników...
+          </Typography>
+        ) : (
+          <>
+            <Typography variant="body2" sx={{ color: zusColors.dark, opacity: 0.8, fontWeight: 500, mb: 1 }}>
+              Ostatnie: {state.uiState.lastCalculation
+                ? new Date(state.uiState.lastCalculation).toLocaleString('pl-PL')
+                : 'Brak danych'
+              }
+            </Typography>
+            <Typography variant="caption" sx={{ color: zusColors.success, fontWeight: 500 }}>
+              💡 Wyniki aktualizują się automatycznie przy zmianie parametrów
+            </Typography>
+          </>
+        )}
       </Box>
     </Box>
   );
