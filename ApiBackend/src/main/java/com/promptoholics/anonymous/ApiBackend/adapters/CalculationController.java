@@ -1,4 +1,4 @@
-package com.promptoholics.anonymous.ApiBackend.adapters.inbound;
+package com.promptoholics.anonymous.ApiBackend.adapters;
 
 import com.promptoholics.anonymous.ApiBackend.api.CalculationApi;
 import com.promptoholics.anonymous.ApiBackend.application.CalculationFacade;
