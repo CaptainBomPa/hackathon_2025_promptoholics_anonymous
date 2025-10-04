@@ -68,19 +68,12 @@ paths:
           required: true
           schema:
             type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserReportCreateRequest'
       responses:
         '202':
           description: Report accepted for processing
           content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReportJob'
+            application/pdf:
+              schema: { type: string, format: binary }
 
   /pensions/calculation-report/{calculationId}/update-postal-code:
     put:
@@ -155,51 +148,6 @@ paths:
         '202':
           description: Report accepted for processing
           content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReportJob'
-
-  /admin/reports/{reportId}:
-    get:
-      tags: [Report]
-      operationId: getReport
-      summary: Report status and download link
-      parameters:
-        - in: path
-          name: reportId
-          required: true
-          schema:
-            type: string
-          description: Report ID returned upon creation
-      responses:
-        '200':
-          description: Current report status
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReportJob'
-        '404':
-          description: Report not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /admin/reports/{reportId}/download:
-    get:
-      tags: [Report]
-      operationId: downloadReport
-      summary: Download generated report
-      parameters:
-        - in: path
-          name: reportId
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Report file
-          content:
             application/vnd.ms-excel:
               schema:
                 type: string
@@ -208,12 +156,6 @@ paths:
               schema:
                 type: string
                 format: binary
-        '410':
-          description: Link expired — generate the report again
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
 
 components:
 
@@ -373,14 +315,6 @@ components:
           type: string
           format: date-time
 
-    UserReportCreateRequest:
-      type: object
-      required: [dateFrom, dateTo]
-      properties:
-        calculationId:
-          type: string
-          description: Identifier of the calculation for which the report is created
-
     AdminReportCreateRequest:
       type: object
       required: [dateFrom, dateTo]
@@ -395,29 +329,6 @@ components:
           type: string
           enum: [xls, csv]
           default: xls
-
-    ReportJob:
-      type: object
-      properties:
-        reportId:
-          type: string
-        status:
-          type: string
-          enum: [queued, processing, ready, failed]
-        downloadUrl:
-          type: string
-          format: uri
-          nullable: true
-        requestedAt:
-          type: string
-          format: date-time
-        expiresAt:
-          type: string
-          format: date-time
-          nullable: true
-        error:
-          type: string
-          nullable: true
 
     Error:
       type: object
