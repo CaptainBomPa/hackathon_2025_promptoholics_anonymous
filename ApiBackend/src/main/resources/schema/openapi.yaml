@@ -1,0 +1,383 @@
+openapi: 3.0.3
+info:
+  title: Pension Simulator API
+  version: "1.0.0"
+  description: >
+    Public API for pension calculation and administrator-generated reports.
+
+servers:
+  - url: https://api.yourdomain.com
+    description: Production
+
+tags:
+  - name: Calculation
+    description: Compute projected pension amounts
+  - name: Facts
+    description: Random pension facts
+  - name: Administration
+    description: Admin operations (requires privileges)
+
+paths:
+  /pensions/calculate:
+    post:
+      tags: [Calculation]
+      summary: Project future pension
+      description: >
+        Returns projected benefit in nominal and real terms, comparison vs. projected average,
+        replacement rate, and sensitivity analyses.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PensionCalculationRequest'
+      responses:
+        '200':
+          description: Calculation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PensionCalculationResponse'
+        '400':
+          description: Malformed JSON or invalid value ranges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation failed (e.g., plannedEndYear < startYear)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  /facts/random:
+    get:
+      tags: [Facts]
+      summary: Get a random pension fact
+      description: >
+        Returns a single, random "Did you know…?" fact with an optional source.
+      parameters:
+        - in: query
+          name: locale
+          description: Preferred response language (e.g., en-GB, pl-PL)
+          required: false
+          schema:
+            type: string
+            example: en-GB
+      responses:
+        '200':
+          description: Random fact
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fact'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/reports:
+    post:
+      tags: [Administration]
+      summary: Generate usage report (XLS/CSV)
+      description: >
+        Creates an asynchronous usage/interest report with columns:
+        Date, Time, Expected Pension, Age, Sex, Salary, Sick Leave Included,
+        ZUS Funds (account/subaccount), Actual/Real Pension, Postal Code.
+        Default output format: XLS.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportCreateRequest'
+      responses:
+        '202':
+          description: Report accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportJob'
+
+  /admin/reports/{reportId}:
+    get:
+      tags: [Administration]
+      summary: Report status and download link
+      parameters:
+        - in: path
+          name: reportId
+          required: true
+          schema:
+            type: string
+          description: Report ID returned upon creation
+      responses:
+        '200':
+          description: Current report status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportJob'
+        '404':
+          description: Report not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/reports/{reportId}/download:
+    get:
+      tags: [Administration]
+      summary: Download generated report
+      parameters:
+        - in: path
+          name: reportId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Report file
+          content:
+            application/vnd.ms-excel:
+              schema:
+                type: string
+                format: binary
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        '410':
+          description: Link expired — generate the report again
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+
+  schemas:
+    PensionCalculationRequest:
+      type: object
+      required:
+        - age
+        - sex
+        - grossSalaryPLN
+        - startYear
+        - plannedEndYear
+      properties:
+        expectedPensionPLN:
+          type: number
+          format: float
+          minimum: 0
+          description: User’s expected pension amount (gross).
+        age:
+          type: integer
+          minimum: 16
+          maximum: 100
+        sex:
+          type: string
+          enum: [F, M]
+        grossSalaryPLN:
+          type: number
+          format: float
+          minimum: 0
+        startYear:
+          type: integer
+          minimum: 1960
+          description: Employment start year (assumed January).
+        plannedEndYear:
+          type: integer
+          minimum: 1960
+          description: Planned end-of-work year (defaults to retirement age if omitted).
+        includeSickLeave:
+          type: boolean
+          default: false
+          description: Includes average sick leave days by gender.
+        zusAccountFundsPLN:
+          type: number
+          format: float
+          nullable: true
+          minimum: 0
+          description: Funds on the main ZUS account (optional).
+        zusSubaccountFundsPLN:
+          type: number
+          format: float
+          nullable: true
+          minimum: 0
+          description: Funds on the ZUS subaccount (optional).
+        postalCode:
+          type: string
+          nullable: true
+          pattern: '^\d{2}-\d{3}$'
+          description: Optional postal code in the format 00-000.
+
+    PensionCalculationResponse:
+      type: object
+      properties:
+        requestedAt:
+          type: string
+          format: date-time
+        assumptions:
+          type: object
+          properties:
+            retirementAgeYear:
+              type: integer
+            inflationModel:
+              type: string
+            wageIndexationSource:
+              type: string
+              description: e.g., national statistics office index series.
+            sickLeaveAssumption:
+              type: string
+        result:
+          type: object
+          required:
+            - actualAmountPLN
+            - realAmountPLN_2025
+            - replacementRatePct
+          properties:
+            actualAmountPLN:
+              type: number
+              format: float
+              description: Nominal amount in retirement year.
+            realAmountPLN_2025:
+              type: number
+              format: float
+              description: Amount deflated to purchasing power of the base year (e.g., 2025).
+            replacementRatePct:
+              type: number
+              format: float
+              description: Replacement rate (pension / indexed wage * 100%).
+            vsAverageInRetirementYearPct:
+              type: number
+              format: float
+              description: Difference vs. projected average in retirement year (p.p.).
+            wageInclSickLeavePLN:
+              type: number
+              format: float
+            wageExclSickLeavePLN:
+              type: number
+              format: float
+            ifPostponedYears:
+              type: object
+              additionalProperties:
+                type: object
+                properties:
+                  actualAmountPLN:
+                    type: number
+                    format: float
+            meetsExpectation:
+              type: object
+              properties:
+                isMet:
+                  type: boolean
+                shortfallPLN:
+                  type: number
+                  format: float
+                  nullable: true
+                extraYearsRequiredEstimate:
+                  type: integer
+                  nullable: true
+        traceId:
+          type: string
+
+    Fact:
+      type: object
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        source:
+          type: object
+          nullable: true
+          properties:
+            name:
+              type: string
+            url:
+              type: string
+              format: uri
+        generatedAt:
+          type: string
+          format: date-time
+
+    ReportCreateRequest:
+      type: object
+      required: [dateFrom, dateTo]
+      properties:
+        dateFrom:
+          type: string
+          format: date
+        dateTo:
+          type: string
+          format: date
+        format:
+          type: string
+          enum: [xls, csv]
+          default: xls
+        timezone:
+          type: string
+          example: Europe/Warsaw
+        filters:
+          type: object
+          properties:
+            includePostalCode:
+              type: boolean
+              default: true
+            sex:
+              type: array
+              items:
+                type: string
+                enum: [F, M]
+            includeSickLeaveOnly:
+              type: boolean
+              nullable: true
+
+    ReportJob:
+      type: object
+      properties:
+        reportId:
+          type: string
+        status:
+          type: string
+          enum: [queued, processing, ready, failed]
+        downloadUrl:
+          type: string
+          format: uri
+          nullable: true
+        requestedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        error:
+          type: string
+          nullable: true
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+
+    ValidationError:
+      allOf:
+        - $ref: '#/components/schemas/Error'
+        - type: object
+          properties:
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  issue:
+                    type: string
