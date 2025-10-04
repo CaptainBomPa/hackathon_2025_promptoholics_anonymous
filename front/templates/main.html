@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="pl" data-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Symulator emerytalny ZUS — prototyp UI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root{
+            --bg:#f7fafc;            /* tło aplikacji – jasne */
+            --surface:#ffffff;        /* panele/karty */
+            --muted:#64748b;         /* tekst drugorzędny */
+            --text:#0f172a;          /* tekst podstawowy */
+            --brand:#128c47;         /* akcent */
+            --brand-2:#16a34a;       /* akcent jaśniejszy */
+            --danger:#b91c1c;        /* błędy */
+            --warning:#b45309;       /* ostrzeżenia */
+            --ok:#15803d;            /* ok */
+            --border:rgba(2,6,23,.08);
+            --shadow:0 10px 30px rgba(2,6,23,.08), inset 0 1px 0 rgba(255,255,255,.6);
+            --radius:18px;
+        }
+        [data-theme="high-contrast"]{--bg:#000;--surface:#000;--text:#fff;--muted:#ccc;--brand:#0ff;--border:#fff}
+        *{box-sizing:border-box}
+        html,body{margin:0;font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial; background:
+                radial-gradient(1200px 800px at 20% -10%, rgba(22,163,74,.10), transparent 50%),
+                radial-gradient(900px 650px at 120% -30%, rgba(134,239,172,.18), transparent 45%),
+                linear-gradient(180deg, #ffffff 0%, #f7fafc 100%);
+            color:var(--text);}
+        body{margin:0;font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial; background:radial-gradient(1200px 800px at 20% -10%, rgba(23,201,100,.18), transparent 50%), radial-gradient(800px 600px at 120% -30%, rgba(110,231,183,.15), transparent 40%), var(--bg); color:var(--text);}
+        a{color:inherit}
+        .container{max-width:1200px;margin:0 auto;padding:28px}
+        header{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.8);backdrop-filter:saturate(140%) blur(10px);border-bottom:1px solid var(--border)}
+        .nav{display:flex;align-items:center;gap:18px}
+        .nav .logo{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.4px}
+        .nav .logo svg{width:28px;height:28px}
+        .spacer{flex:1}
+        .toolbar{display:flex;gap:8px;align-items:center}
+        button, .btn{background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); border:1px solid var(--border); box-shadow:var(--shadow); color:var(--text); padding:12px 16px; border-radius:14px; font-weight:600; letter-spacing:.2px; cursor:pointer; transition:transform .06s ease, border-color .2s ease, background .2s ease}
+        button:hover, .btn:hover{transform:translateY(-1px); border-color:rgba(255,255,255,.22)}
+        .btn-primary{background:linear-gradient(180deg, rgba(23,201,100,.35), rgba(23,201,100,.15)); border-color:rgba(110,231,183,.6)}
+        .btn-ghost{background:transparent}
+        .grid{display:grid;gap:22px}
+        .grid-2{grid-template-columns:1.2fr .8fr}
+        .grid-3{grid-template-columns:repeat(3,1fr)}
+        @media (max-width: 980px){.grid-2,.grid-3{grid-template-columns:1fr}}
+
+        .card{background:linear-gradient(180deg, rgba(2,6,23,.02), rgba(2,6,23,.0)); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:22px}
+        .card h3{margin:0 0 6px 0}
+        .eyebrow{font-size:12px; letter-spacing:.3px; text-transform:uppercase; color:var(--muted)}
+        .title-xl{font-size:36px; line-height:1.1; margin:0 0 8px 0}
+        .title-lg{font-size:24px; line-height:1.2; margin:0}
+        .muted{color:var(--muted)}
+
+        .field{display:flex; flex-direction:column; gap:8px}
+        .field label{font-size:14px; color:var(--muted)}
+        .input{display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.03); border:1px solid var(--border); border-radius:12px; padding:12px 14px}
+        .input input, .input select{flex:1; background:transparent; border:0; outline:0; color:var(--text); font-size:16px}
+
+        .pill{display:inline-flex; align-items:center; gap:8px; font-size:12px; border:1px solid var(--border); padding:8px 12px; border-radius:999px; background:rgba(255,255,255,.03)}
+        .kpi{display:flex; align-items:center; justify-content:space-between; background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); border:1px dashed var(--border); border-radius:14px; padding:16px}
+
+        .tabs{display:flex; gap:6px; flex-wrap:wrap}
+        .tab{border:1px solid var(--border); padding:10px 14px; border-radius:12px; cursor:pointer; background:rgba(255,255,255,.02)}
+        .tab.active{border-color:rgba(110,231,183,.6); background:linear-gradient(180deg, rgba(23,201,100,.2), rgba(23,201,100,.1))}
+
+        .footer{opacity:.8; font-size:12px; border-top:1px solid var(--border); padding:18px 0; margin-top:30px}
+
+        /* Sekcje/ekrany */
+        .screen{display:none; animation:fade .25s ease}
+        .screen.active{display:block}
+        @keyframes fade{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:translateY(0)}}
+
+        /* Małe wykresy placeholder (canvas + CSS) */
+        .bar{height:140px; display:grid; grid-template-columns:repeat(6,1fr); gap:10px; align-items:end}
+        .bar span{display:block; background:linear-gradient(180deg, rgba(110,231,183,.7), rgba(23,201,100,.5)); border-radius:10px; border:1px solid rgba(110,231,183,.5)}
+        .area{position:relative; height:160px; overflow:hidden; border-radius:12px; background:linear-gradient(180deg, rgba(110,231,183,.08), rgba(23,201,100,.04))}
+        .area::after{content:""; position:absolute; inset:0; background:conic-gradient(from 190deg at 0 100%, rgba(23,201,100,.35), rgba(23,201,100,.05)); opacity:.5}
+
+        /* Toasty */
+        .toast{position:fixed; right:20px; bottom:20px; background:#0b1217; border:1px solid var(--border); padding:12px 14px; border-radius:12px; box-shadow:var(--shadow); display:none}
+        .toast.show{display:block}
+
+        /* Formularz admin tabelka */
+        table{width:100%; border-collapse:separate; border-spacing:0 10px}
+        th{font-size:12px; color:var(--muted); text-align:left; padding:0 10px}
+        td{background:rgba(255,255,255,.02); border:1px solid var(--border); padding:12px 10px}
+        tr td:first-child{border-radius:12px 0 0 12px}
+        tr td:last-child{border-radius:0 12px 12px 0}
+
+        /* Ułatwienia dostępności */
+        :focus-visible{outline:2px solid var(--brand-2); outline-offset:2px}
+        .sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0}
+    </style>
+</head>
+<body>
+<header>
+    <div class="container nav" role="navigation" aria-label="Nawigacja główna">
+        <div class="logo" aria-label="ZUS – Symulator">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 16l6-8 4 5 6-9"/><path d="M3 21h18"/></svg>
+            <span>ZUS • Symulator emerytalny</span>
+        </div>
+        <div class="spacer"></div>
+        <div class="toolbar">
+            <button class="btn" id="contrastBtn" title="Wysoki kontrast" aria-pressed="false">Kontrast</button>
+            <button class="btn" id="textUp" title="Większy tekst">A+</button>
+            <button class="btn" id="textDown" title="Mniejszy tekst">A−</button>
+            <button class="btn btn-primary" id="goWizard">Rozpocznij</button>
+        </div>
+    </div>
+</header>
+
+<main class="container" id="app" tabindex="-1">
+    <!-- SCREEN: Start -->
+    <section id="screen-start" class="screen active" aria-labelledby="start-heading">
+        <div class="grid grid-2">
+            <div class="card">
+                <p class="eyebrow">Krok 0</p>
+                <h1 id="start-heading" class="title-xl">Jaki poziom emerytury chcesz osiągnąć?</h1>
+                <p class="muted">Wpisz kwotę brutto, którą chciał(a)byś otrzymywać co miesiąc po przejściu na emeryturę.</p>
+                <div class="field" style="margin-top:12px">
+                    <label for="goal">Kwota oczekiwana (PLN)</label>
+                    <div class="input"><input id="goal" type="number" min="0" placeholder="np. 5200" inputmode="decimal" /><span>PLN</span></div>
+                </div>
+                <div class="kpi" style="margin-top:16px">
+                    <span class="muted">Średnia emerytura (prognoza)</span>
+                    <strong id="avgPension">4 200 PLN</strong>
+                </div>
+                <div class="bar" style="margin:18px 0 10px">
+                    <span style="height:60%"></span>
+                    <span style="height:85%"></span>
+                    <span style="height:70%"></span>
+                    <span style="height:40%"></span>
+                    <span style="height:65%"></span>
+                    <span style="height:55%"></span>
+                </div>
+                <div style="display:flex; gap:12px; margin-top:8px">
+                    <button class="btn btn-primary" id="toWizard1">Przejdź do symulacji</button>
+                    <button class="btn btn-ghost" id="toSources">Źródła i metodologia</button>
+                </div>
+            </div>
+            <div class="card">
+                <p class="eyebrow">Czy wiesz, że…</p>
+                <h3 class="title-lg">Wydłużenie aktywności o 2 lata może znacząco zwiększyć świadczenie.</h3>
+                <p class="muted">To tylko przykład edukacyjny. Szczegółowe wyliczenia zobaczysz w wynikach symulacji dla Twoich danych.</p>
+                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px">
+                    <span class="pill">Minimalne świadczenie</span>
+                    <span class="pill">Średnie wynagrodzenie</span>
+                    <span class="pill">Współczynnik zastąpienia</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SCREEN: Wizard Step 1 -->
+    <section id="screen-w1" class="screen" aria-labelledby="w1-heading">
+        <div class="grid grid-2">
+            <div class="card">
+                <p class="eyebrow">Krok 1 z 2</p>
+                <h2 id="w1-heading" class="title-lg">Dane podstawowe</h2>
+                <div class="grid grid-3" style="margin-top:14px">
+                    <div class="field">
+                        <label for="age">Wiek</label>
+                        <div class="input"><input id="age" type="number" min="16" max="80" placeholder="np. 33"/></div>
+                    </div>
+                    <div class="field">
+                        <label for="sex">Płeć</label>
+                        <div class="input">
+                            <select id="sex" aria-label="Płeć">
+                                <option value="K">Kobieta</option>
+                                <option value="M">Mężczyzna</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="salary">Wynagrodzenie brutto (PLN/mc)</label>
+                        <div class="input"><input id="salary" type="number" min="0" placeholder="np. 9200"/><span>PLN</span></div>
+                    </div>
+                </div>
+                <div class="grid grid-3" style="margin-top:10px">
+                    <div class="field">
+                        <label for="startYear">Rok rozpoczęcia pracy</label>
+                        <div class="input"><input id="startYear" type="number" min="1970" max="2100" placeholder="np. 2010"/></div>
+                    </div>
+                    <div class="field">
+                        <label for="endYear">Planowany rok zakończenia aktywności</label>
+                        <div class="input"><input id="endYear" type="number" min="2025" max="2100" placeholder="np. 2065"/></div>
+                    </div>
+                    <div class="field">
+                        <label for="goal2">Cel emerytalny (z kroku 0)</label>
+                        <div class="input"><input id="goal2" type="number" min="0" placeholder="np. 5200"/><span>PLN</span></div>
+                    </div>
+                </div>
+                <p class="muted" style="margin-top:10px">Wynagrodzenia historyczne będą odwrotnie indeksowane ścieżką wzrostu płac. To prototyp — wartości są poglądowe.</p>
+                <div style="margin-top:16px; display:flex; gap:10px">
+                    <button class="btn" data-nav="screen-start">Wstecz</button>
+                    <button class="btn btn-primary" id="toWizard2">Dalej</button>
+                </div>
+            </div>
+            <div class="card">
+                <p class="eyebrow">Podpowiedzi</p>
+                <ul class="muted">
+                    <li>Minimalny wiek ustaw 16–80.</li>
+                    <li>Rok zakończenia domyślnie = osiągnięcie wieku emerytalnego.</li>
+                    <li>Możesz wypełnić cel tutaj lub na ekranie start.</li>
+                </ul>
+                <div class="area" style="margin-top:12px"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SCREEN: Wizard Step 2 -->
+    <section id="screen-w2" class="screen" aria-labelledby="w2-heading">
+        <div class="grid grid-2">
+            <div class="card">
+                <p class="eyebrow">Krok 2 z 2</p>
+                <h2 id="w2-heading" class="title-lg">Opcje dodatkowe</h2>
+                <div class="grid grid-2" style="margin-top:12px">
+                    <div class="field">
+                        <label for="zusSaldo">Środki na koncie ZUS</label>
+                        <div class="input"><input id="zusSaldo" type="number" min="0" placeholder="np. 120000"/><span>PLN</span></div>
+                    </div>
+                    <div class="field">
+                        <label for="subSaldo">Środki na subkoncie</label>
+                        <div class="input"><input id="subSaldo" type="number" min="0" placeholder="np. 38000"/><span>PLN</span></div>
+                    </div>
+                </div>
+                <div class="field" style="margin-top:10px">
+                    <label for="sick">Uwzględnij zwolnienia chorobowe</label>
+                    <div class="input"><select id="sick"><option value="avg">Średnie dla płci</option><option value="none">Bez chorobowego</option><option value="custom">Własne założenia</option></select></div>
+                </div>
+                <div id="sickCustom" class="grid grid-3" style="display:none; margin-top:10px">
+                    <div class="field"><label for="sickDays">Dni L4/rok</label><div class="input"><input id="sickDays" type="number" min="0" value="7"/></div></div>
+                    <div class="field"><label for="sickYears">Lata z L4</label><div class="input"><input id="sickYears" type="number" min="0" value="5"/></div></div>
+                    <div class="field"><label for="sickImpact">Ubytek składek (%)</label><div class="input"><input id="sickImpact" type="number" min="0" max="100" value="15"/></div></div>
+                </div>
+                <div style="margin-top:16px; display:flex; gap:10px">
+                    <button class="btn" data-nav="screen-w1">Wstecz</button>
+                    <button class="btn btn-primary" id="calcBtn">Przelicz moją przyszłą emeryturę</button>
+                </div>
+            </div>
+            <div class="card">
+                <p class="eyebrow">Wpływ chorobowego — edukacyjnie</p>
+                <div class="bar" aria-hidden="true" style="margin-top:8px">
+                    <span style="height:78%"></span><span style="height:82%"></span><span style="height:76%"></span><span style="height:60%"></span><span style="height:72%"></span><span style="height:68%"></span>
+                </div>
+                <p class="muted">Uśrednione założenia mogą obniżyć podstawę wymiaru świadczenia. Dokładne wartości zobaczysz w wynikach.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SCREEN: Results -->
+    <section id="screen-results" class="screen" aria-labelledby="res-heading">
+        <div class="grid grid-2">
+            <div class="card">
+                <p class="eyebrow">Wyniki</p>
+                <h2 id="res-heading" class="title-lg">Twoja prognozowana emerytura</h2>
+                <div class="grid grid-3" style="margin-top:10px">
+                    <div class="kpi"><span class="muted">Kwota nominalna</span><strong id="outNom">—</strong></div>
+                    <div class="kpi"><span class="muted">Kwota realna</span><strong id="outReal">—</strong></div>
+                    <div class="kpi"><span class="muted">Wsp. zastąpienia</span><strong id="outWr">—</strong></div>
+                </div>
+                <div class="area" style="margin-top:16px"></div>
+                <div class="tabs" style="margin-top:12px">
+                    <button class="tab active" data-yearshift="0">Rok 0</button>
+                    <button class="tab" data-yearshift="1">+1 rok</button>
+                    <button class="tab" data-yearshift="2">+2 lata</button>
+                    <button class="tab" data-yearshift="5">+5 lat</button>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:14px">
+                    <button class="btn" data-nav="screen-w2">Zmień założenia</button>
+                    <button class="btn btn-primary" data-nav="screen-dash">Przejdź do Dashboardu</button>
+                    <button class="btn" data-nav="screen-report">Pobierz raport</button>
+                </div>
+            </div>
+            <div class="card">
+                <p class="eyebrow">Porównania</p>
+                <ul class="muted" id="compareList" style="line-height:1.9"></ul>
+                <div class="kpi" style="margin-top:10px"><span class="muted">Różnica do celu</span><strong id="gapToGoal">—</strong></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SCREEN: Dashboard -->
+    <section id="screen-dash" class="screen" aria-labelledby="dash-heading">
+        <p class="eyebrow">What‑if • Edycja</p>
+        <h2 id="dash-heading" class="title-lg">Dashboard symulatora</h2>
+        <div class="grid grid-3" style="margin-top:12px">
+            <div class="card">
+                <h3 class="title-lg">Historia i przyszłość płac</h3>
+                <div class="muted" style="margin:8px 0">Edytuj wartości roczne (poglądowo).</div>
+                <div class="grid" style="grid-template-columns:1fr 1fr; gap:10px">
+                    <div class="field"><label>2024</label><div class="input"><input type="number" value="9200"></div></div>
+                    <div class="field"><label>2025</label><div class="input"><input type="number" value="9550"></div></div>
+                    <div class="field"><label>2026</label><div class="input"><input type="number" value="9900"></div></div>
+                    <div class="field"><label>2027</label><div class="input"><input type="number" value="10200"></div></div>
+                </div>
+                <button class="btn" style="margin-top:10px">Przelicz</button>
+            </div>
+            <div class="card">
+                <h3 class="title-lg">Zdarzenia chorobowe</h3>
+                <div class="muted">Oś czasu L4 (pogląd):</div>
+                <div class="bar" style="margin-top:8px"><span style="height:15%"></span><span style="height:0%"></span><span style="height:25%"></span><span style="height:8%"></span><span style="height:0%"></span><span style="height:18%"></span></div>
+                <div class="kpi" style="margin-top:8px"><span class="muted">Łączny wymiar</span><strong>~ 11 dni/rok</strong></div>
+            </div>
+            <div class="card">
+                <h3 class="title-lg">Saldo konta i subkonta</h3>
+                <div class="area" style="margin-top:8px"></div>
+                <div class="kpi" style="margin-top:8px"><span class="muted">Saldo łącznie</span><strong id="saldoTotal">—</strong></div>
+            </div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:14px">
+            <button class="btn" data-nav="screen-results">Zobacz wyniki</button>
+            <button class="btn btn-primary" data-nav="screen-report">Pobierz raport</button>
+        </div>
+    </section>
+
+    <!-- SCREEN: Report -->
+    <section id="screen-report" class="screen" aria-labelledby="report-heading">
+        <div class="grid grid-2">
+            <div class="card">
+                <p class="eyebrow">Raport PDF</p>
+                <h2 id="report-heading" class="title-lg">Podgląd raportu</h2>
+                <div class="muted">Wersja demo — generowanie mock.</div>
+                <div class="grid" style="margin-top:10px">
+                    <div class="field"><label>Język</label><div class="input"><select><option>Polski</option><option>English</option></select></div></div>
+                    <div class="field"><label>Poziom szczegółowości</label><div class="input"><select><option>Standard</option><option>Szczegółowy</option></select></div></div>
+                </div>
+                <button class="btn btn-primary" id="mockPdf">Pobierz PDF (mock)</button>
+            </div>
+            <div class="card">
+                <p class="eyebrow">Streszczenie</p>
+                <ul class="muted" id="reportSummary" style="line-height:1.9"></ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- SCREEN: Admin -->
+    <section id="screen-admin" class="screen" aria-labelledby="admin-heading">
+        <p class="eyebrow">Panel administratora</p>
+        <h2 id="admin-heading" class="title-lg">Raport zainteresowania</h2>
+        <div class="card" style="margin-top:10px">
+            <div style="display:flex; gap:10px; align-items:end; flex-wrap:wrap">
+                <div class="field"><label>Data od</label><div class="input"><input type="date"></div></div>
+                <div class="field"><label>Data do</label><div class="input"><input type="date"></div></div>
+                <div class="field"><label>Płeć</label><div class="input"><select><option>Wszystkie</option><option>K</option><option>M</option></select></div></div>
+                <button class="btn">Filtruj</button>
+                <button class="btn btn-primary" id="exportXls">Eksport .xls</button>
+            </div>
+            <div style="overflow:auto; margin-top:12px">
+                <table aria-describedby="admin-heading">
+                    <thead>
+                    <tr><th>Data</th><th>Godzina</th><th>Oczekiwana emerytura</th><th>Wiek</th><th>Płeć</th><th>Wynagrodzenie</th><th>Chorobowe</th><th>Saldo ZUS</th><th>Saldo subkonta</th><th>Nominalna</th><th>Realna</th><th>Kod pocztowy</th></tr>
+                    </thead>
+                    <tbody id="adminRows"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- SCREEN: Sources -->
+    <section id="screen-sources" class="screen" aria-labelledby="src-heading">
+        <p class="eyebrow">Transparentność</p>
+        <h2 id="src-heading" class="title-lg">Źródła danych i metodologia</h2>
+        <div class="grid grid-2" style="margin-top:12px">
+            <div class="card">
+                <h3 class="title-lg">Źródła</h3>
+                <ul class="muted" style="line-height:1.9">
+                    <li>ZUS — Prognoza Funduszu Ubezpieczeń Społecznych</li>
+                    <li>GUS — ceny i wynagrodzenia</li>
+                    <li>NBP — projekcje inflacji (użyte edukacyjnie)</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3 class="title-lg">Założenia metodyczne</h3>
+                <ul class="muted" style="line-height:1.9">
+                    <li>Odwrotne indeksowanie płac historycznych</li>
+                    <li>Wynik „nominalny” i „realny”</li>
+                    <li>Wpływ zwolnień chorobowych</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <div class="footer muted">© ZUS (mock) • Ten plik to prototyp UI do warsztatów — wartości i obliczenia są fikcyjne.</div>
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite">Zapisano</div>
+
+<script>
+    // ====== Helpery ======
+    const qs = s => document.querySelector(s);
+    const qsa = s => [...document.querySelectorAll(s)];
+    const formatPLN = n => new Intl.NumberFormat('pl-PL',{style:'currency', currency:'PLN', maximumFractionDigits:0}).format(n||0);
+
+    // Nawigacja między ekranami
+    function showScreen(id){ qsa('.screen').forEach(s=>s.classList.remove('active')); qs('#'+id).classList.add('active'); window.scrollTo({top:0,behavior:'smooth'}); }
+    qsa('[data-nav]').forEach(btn=>btn.addEventListener('click', e=> showScreen(btn.getAttribute('data-nav'))));
+    qs('#goWizard').addEventListener('click', ()=> showScreen('screen-w1'));
+    qs('#toWizard1').addEventListener('click', ()=> showScreen('screen-w1'));
+    qs('#toSources').addEventListener('click', ()=> showScreen('screen-sources'));
+    qs('#toWizard2').addEventListener('click', ()=> showScreen('screen-w2'));
+
+    // Kontrast i rozmiar tekstu
+    const root = document.documentElement;
+    qs('#contrastBtn').addEventListener('click', ()=>{
+        const now = root.getAttribute('data-theme')==='high-contrast'?'light':'high-contrast';
+        root.setAttribute('data-theme', now);
+    });
+    let fs = 1;
+    function applyFs(){ document.body.style.fontSize = (fs*1)+'rem'; }
+    qs('#textUp').addEventListener('click',()=>{ fs=Math.min(1.25, fs+0.05); applyFs(); });
+    qs('#textDown').addEventListener('click',()=>{ fs=Math.max(0.85, fs-0.05); applyFs(); });
+
+    // Chorobowe – custom pola
+    qs('#sick').addEventListener('change', (e)=>{
+        qs('#sickCustom').style.display = e.target.value==='custom' ? 'grid' : 'none';
+    });
+
+    // Prosta „symulacja” mock (nieprawdziwa, dla wizualizacji)
+    function calculate(){
+        const goal = Number(qs('#goal').value || qs('#goal2').value || 0);
+        const age = Number(qs('#age').value||30);
+        const salary = Number(qs('#salary').value||9000);
+        const endYear = Number(qs('#endYear').value||2065);
+        const startYear = Number(qs('#startYear').value||2010);
+        const yearsLeft = Math.max(5, endYear - (new Date().getFullYear()));
+        const saldo = Number(qs('#zusSaldo').value||120000) + Number(qs('#subSaldo').value||40000);
+        const sickMode = qs('#sick').value;
+        const sickPenalty = sickMode==='none'?0:(sickMode==='avg'?0.03: (Number(qs('#sickImpact').value||15)/1000));
+
+        const base = salary * 0.35;               // poglądowa baza świadczenia
+        const growth = 1 + Math.min(0.8, yearsLeft*0.012); // „zysk” z odroczenia
+        const fromSaldo = Math.sqrt(saldo)/3;     // wkład środków (mock)
+        const nominal = Math.max(1200, (base + fromSaldo) * growth * (1 - sickPenalty));
+        const real = nominal * 0.86;              // korekta infl.
+        const wr = nominal / Math.max(1,salary);
+
+        qs('#outNom').textContent = formatPLN(nominal);
+        qs('#outReal').textContent = formatPLN(real);
+        qs('#outWr').textContent = (wr*100).toFixed(0)+'%';
+        qs('#saldoTotal').textContent = formatPLN(saldo);
+
+        const avg = 4200*(1+yearsLeft*0.01);
+        qs('#compareList').innerHTML = `
+      <li>Wobec prognozowanej średniej: <strong>${ nominal>avg?'+':'' }${formatPLN(nominal-avg)}</strong></li>
+      <li>Cel użytkownika: <strong>${goal?formatPLN(goal):'—'}</strong></li>
+      <li>Pracuj dłużej o 2 lata ⇒ ~<strong>${formatPLN(nominal*1.08)}</strong></li>`;
+
+        const gap = goal ? goal - nominal : 0;
+        qs('#gapToGoal').textContent = goal ? (gap>0? `${formatPLN(gap)} poniżej celu` : 'cel osiągnięty lub powyżej') : '—';
+
+        // Uzupełnij admin demo rekord
+        addAdminRow({goal, age, sex:qs('#sex').value, salary, sick:sickMode, zus:qs('#zusSaldo').value||0, sub:qs('#subSaldo').value||0, nom:nominal, real});
+
+        showScreen('screen-results');
+    }
+    qs('#calcBtn').addEventListener('click', calculate);
+
+    // Karty wyników dla opóźnienia emerytury
+    qsa('.tab').forEach(t=>t.addEventListener('click',()=>{
+        qsa('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active');
+        const shift = Number(t.dataset.yearshift||0);
+        const base = (qs('#outNom').textContent||'0').replace(/[^\d]/g,'');
+        const val = Number(base) * (1 + shift*0.04);
+        qs('#outNom').textContent = formatPLN(val);
+        qs('#outReal').textContent = formatPLN(val*0.86);
+    }));
+
+    // Mock PDF i eksport XLS
+    qs('#mockPdf').addEventListener('click', ()=> toast('Wygenerowano raport PDF (mock).'));
+    qs('#exportXls').addEventListener('click', ()=> toast('Wyeksportowano plik .xls (mock).'));
+
+    function toast(msg){ const t=qs('#toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
+
+    // Dane admin – dodawanie wierszy
+    function addAdminRow(r){
+        const tr = document.createElement('tr');
+        const d = new Date();
+        const cells = [d.toLocaleDateString('pl-PL'), d.toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'}), formatPLN(r.goal||0), r.age, r.sex, formatPLN(r.salary), r.sick, formatPLN(r.zus), formatPLN(r.sub), formatPLN(r.nom), formatPLN(r.real), '—'];
+        tr.innerHTML = cells.map(c=>`<td>${c}</td>`).join('');
+        qs('#adminRows').prepend(tr);
+        // Streszczenie do raportu
+        qs('#reportSummary').innerHTML = `
+      <li>Kwota nominalna: <strong>${formatPLN(r.nom)}</strong></li>
+      <li>Kwota realna: <strong>${formatPLN(r.real)}</strong></li>
+      <li>Współczynnik zastąpienia: <strong>${Math.round((r.nom/(r.salary||1))*100)}%</strong></li>`;
+    }
+
+    // Focus main na przejściach (a11y)
+    const observer = new MutationObserver(()=>{ if(qs('main .screen.active')) qs('#app').focus(); });
+    observer.observe(qs('main'), {attributes:true, subtree:true, attributeFilter:['class']});
+</script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <title>Symulator ZUS – Kreator · Opcje dodatkowe</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <!-- UWAGA: wersja NIERESPONSYWNA (stała szerokość) zgodnie z prośbą -->
+    <style>
+        /* Paleta i typografia */
+        html,body{margin:0; padding:0; background:#f7fafc; color:#0f172a; font:16px/1.5 "Inter", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial}
+        a{color:inherit; text-decoration:none}
+        strong{font-weight:700}
+
+        /* Stały layout (brak responsywności) */
+        .container{width:1160px; margin:0 auto; padding:28px}
+        header{position:relative; background:#ffffff; border-bottom:1px solid rgba(2,6,23,.08)}
+        .nav{display:flex; align-items:center}
+        .logo{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.3px}
+        .logo svg{width:28px; height:28px}
+        .spacer{flex:1}
+        .toolbar{display:flex; gap:10px; margin-left:auto}
+
+        /* Komponenty */
+        .btn{background:linear-gradient(180deg, rgba(2,6,23,.02), rgba(2,6,23,.0)); border:1px solid rgba(2,6,23,.08); border-radius:14px; padding:10px 14px; font-weight:600; cursor:pointer}
+        .btn-primary{background:linear-gradient(180deg, rgba(22,163,74,.25), rgba(22,163,74,.12)); border-color:rgba(22,163,74,.45)}
+        .btn-ghost{background:transparent}
+        .card{background:#fff; border:1px solid rgba(2,6,23,.08); border-radius:18px; padding:22px; box-shadow:0 10px 30px rgba(2,6,23,.05)}
+        .title{font-size:26px; line-height:1.25; margin:0 0 8px}
+        .subtitle{color:#64748b; margin:0 0 18px}
+        .grid-2{display:grid; grid-template-columns: 740px 380px; gap:20px}
+        .grid-3{display:grid; grid-template-columns: repeat(3, 1fr); gap:16px}
+        .field{display:flex; flex-direction:column; gap:6px}
+        .field label{color:#64748b; font-size:14px}
+        .input{display:flex; align-items:center; border:1px solid rgba(2,6,23,.08); background:rgba(255,255,255,.65); padding:12px 14px; border-radius:12px}
+        .input input, .input select{flex:1; border:0; outline:0; background:transparent; font-size:16px; color:#0f172a}
+        .hint{color:#64748b; font-size:14px}
+        .kpi{display:flex; align-items:center; justify-content:space-between; border:1px dashed rgba(2,6,23,.15); border-radius:14px; padding:12px 14px}
+        .pill{display:inline-flex; align-items:center; gap:8px; font-size:12px; padding:8px 12px; border:1px solid rgba(2,6,23,.08); border-radius:999px; background:#fff}
+
+        /* Stepper + pasek postępu */
+        .stepper{display:flex; align-items:center; gap:10px; margin:14px 0}
+        .dot{width:28px; height:28px; border-radius:999px; display:grid; place-items:center; border:1px solid rgba(2,6,23,.12); background:#fff}
+        .dot.active{background:linear-gradient(180deg, rgba(22,163,74,.18), rgba(22,163,74,.06)); border-color:rgba(22,163,74,.45)}
+        .line{flex:1; height:2px; background:linear-gradient(90deg, #16a34a, rgba(2,6,23,.08))}
+        .progress{height:8px; border-radius:999px; background:rgba(2,6,23,.06); overflow:hidden}
+        .progress > span{display:block; height:100%; width:100%; background:linear-gradient(90deg, #16a34a, #8bdea8)}
+
+        /* Błędy */
+        .error{display:none; color:#b91c1c; font-size:12px}
+        .invalid{box-shadow:0 0 0 4px rgba(185,28,28,.08) inset}
+        .note{font-size:13px; color:#64748b}
+    </style>
+</head>
+<body>
+<header>
+    <div class="container nav">
+        <div class="logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 16l6-8 4 5 6-9"/><path d="M3 21h18"/></svg>
+            <span>ZUS • Symulator emerytalny</span>
+        </div>
+        <div class="spacer"></div>
+        <div class="toolbar">
+            <a class="btn btn-ghost" href="start.html">Start</a>
+            <a class="btn btn-ghost" href="kreator-1.html">Kreator 1</a>
+            <a class="btn btn-ghost btn-primary" href="kreator-2.html">Kreator 2</a>
+            <a class="btn btn-ghost" href="wynik.html">Wyniki</a>
+            <a class="btn btn-ghost" href="dashboard.html">Dashboard</a>
+            <a class="btn btn-ghost" href="raport.html">Raport</a>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+    <div class="stepper" aria-hidden="true">
+        <div class="dot">1</div><div class="line"></div><div class="dot active">2</div><div class="line"></div><div class="dot">✔</div>
+    </div>
+    <div class="progress" aria-hidden="true"><span></span></div>
+
+    <div class="grid-2" style="margin-top:16px">
+        <section class="card">
+            <h1 class="title">Kreator · Opcje dodatkowe</h1>
+            <p class="subtitle">Uzupełnij opcjonalne parametry. Jeśli pominiesz, użyjemy uśrednionych założeń.</p>
+
+            <div class="grid-2">
+                <div class="field">
+                    <label for="zusSaldo">Środki na koncie ZUS</label>
+                    <div class="input"><input id="zusSaldo" type="number" min="0" placeholder="np. 120000"/><span style="margin-left:6px">PLN</span></div>
+                    <div class="note">Jeśli nie wiesz, zostaw puste — oszacujemy na podstawie wynagrodzenia.</div>
+                </div>
+                <div class="field">
+                    <label for="subSaldo">Środki na subkoncie</label>
+                    <div class="input"><input id="subSaldo" type="number" min="0" placeholder="np. 38000"/><span style="margin-left:6px">PLN</span></div>
+                </div>
+            </div>
+
+            <div class="field" style="margin-top:12px">
+                <label for="sick">Uwzględnij zwolnienia chorobowe</label>
+                <div class="input">
+                    <select id="sick">
+                        <option value="avg">Średnie dla płci</option>
+                        <option value="none">Bez chorobowego</option>
+                        <option value="custom">Własne założenia</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="sickCustom" class="grid-3" style="display:none; margin-top:12px">
+                <div class="field"><label for="sickDays">Dni L4/rok</label><div class="input"><input id="sickDays" type="number" min="0" value="7"/></div></div>
+                <div class="field"><label for="sickYears">Lata z L4</label><div class="input"><input id="sickYears" type="number" min="0" value="5"/></div></div>
+                <div class="field"><label for="sickImpact">Ubytek składek (%)</label><div class="input"><input id="sickImpact" type="number" min="0" max="100" value="15"/></div></div>
+            </div>
+
+            <p class="hint" style="margin-top:12px">Założenia chorobowe mają wpływ na podstawę wymiaru składek i mogą obniżyć świadczenie.</p>
+
+            <div style="display:flex; gap:10px; margin-top:16px">
+                <a class="btn" href="kreator-1.html">Wstecz</a>
+                <a id="next" class="btn btn-primary" href="wynik.html">Przelicz i pokaż wynik</a>
+            </div>
+        </section>
+
+        <aside class="card">
+            <h2 class="title" style="font-size:20px">Podpowiedzi</h2>
+            <ul class="hint" style="margin:8px 0 0 18px">
+                <li>Puste pola sald są OK — potraktujemy je domyślnie.</li>
+                <li><strong>Chorobowe: "Średnie dla płci"</strong> to najszybszy start, a "Własne" otwiera parametry poniżej.</li>
+                <li>Ubytek składek (%) to poglądowy mnożnik wpływu absencji.</li>
+            </ul>
+            <div class="kpi" style="margin-top:14px"><span class="hint">Saldo łącznie</span><strong id="saldoTotal">—</strong></div>
+        </aside>
+    </div>
+</main>
+
+<script>
+    const $ = s => document.querySelector(s);
+    const toPLN = v => new Intl.NumberFormat('pl-PL',{style:'currency', currency:'PLN', maximumFractionDigits:0}).format(v||0);
+
+    function updateSaldo(){
+        const z = Number($('#zusSaldo').value||0), s = Number($('#subSaldo').value||0);
+        $('#saldoTotal').textContent = toPLN(z+s);
+    }
+
+    $('#sick').addEventListener('change', (e)=>{
+        $('#sickCustom').style.display = e.target.value==='custom' ? 'grid' : 'none';
+    });
+
+    ['input','change'].forEach(evt=> ['#zusSaldo','#subSaldo'].forEach(id=> $(id).addEventListener(evt, updateSaldo)));
+    updateSaldo();
+</script>
+</body>
+</html>

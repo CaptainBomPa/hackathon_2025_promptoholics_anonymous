@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <title>Symulator ZUS – Wynik</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <!-- UWAGA: wersja NIERESPONSYWNA (stała szerokość) zgodnie z prośbą -->
+    <style>
+        /* Paleta i typografia */
+        html,body{margin:0; padding:0; background:#f7fafc; color:#0f172a; font:16px/1.5 "Inter", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial}
+        a{color:inherit; text-decoration:none}
+        strong{font-weight:700}
+
+        /* Stały layout (brak responsywności) */
+        .container{width:1160px; margin:0 auto; padding:28px}
+        header{position:relative; background:#ffffff; border-bottom:1px solid rgba(2,6,23,.08)}
+        .nav{display:flex; align-items:center}
+        .logo{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.3px}
+        .logo svg{width:28px; height:28px}
+        .toolbar{display:flex; gap:10px; margin-left:auto}
+
+        /* Komponenty */
+        .btn{background:linear-gradient(180deg, rgba(2,6,23,.02), rgba(2,6,23,.0)); border:1px solid rgba(2,6,23,.08); border-radius:14px; padding:10px 14px; font-weight:600; cursor:pointer}
+        .btn-primary{background:linear-gradient(180deg, rgba(22,163,74,.25), rgba(22,163,74,.12)); border-color:rgba(22,163,74,.45)}
+        .btn-ghost{background:transparent}
+        .card{background:#fff; border:1px solid rgba(2,6,23,.08); border-radius:18px; padding:22px; box-shadow:0 10px 30px rgba(2,6,23,.05)}
+        .title{font-size:26px; line-height:1.25; margin:0 0 8px}
+        .subtitle{color:#64748b; margin:0 0 18px}
+        .grid-2{display:grid; grid-template-columns: 740px 380px; gap:20px}
+        .grid-3{display:grid; grid-template-columns: repeat(3, 1fr); gap:16px}
+        .kpi{display:flex; align-items:center; justify-content:space-between; border:1px dashed rgba(2,6,23,.15); border-radius:14px; padding:12px 14px}
+        .muted{color:#64748b}
+        .pill{display:inline-flex; align-items:center; gap:8px; font-size:12px; padding:8px 12px; border:1px solid rgba(2,6,23,.08); border-radius:999px; background:#fff; cursor:pointer}
+
+        /* Zakładki scenariuszy */
+        .tabs{display:flex; gap:8px; margin-top:12px}
+        .tab{border:1px solid rgba(2,6,23,.12); padding:10px 14px; border-radius:12px; cursor:pointer; background:#fff}
+        .tab.active{border-color:rgba(22,163,74,.45); box-shadow:0 0 0 2px rgba(22,163,74,.12) inset}
+
+        /* Pseudo-wykresy */
+        .area{position:relative; height:180px; overflow:hidden; border-radius:12px; background:linear-gradient(180deg, rgba(22,163,74,.10), rgba(22,163,74,.05))}
+        .area::after{content:""; position:absolute; inset:0; background:conic-gradient(from 190deg at 0 100%, rgba(22,163,74,.35), rgba(22,163,74,.05)); opacity:.45}
+
+        /* Tabela porównań */
+        table{width:100%; border-collapse:separate; border-spacing:0 10px}
+        th{font-size:12px; color:#64748b; text-align:left; padding:0 10px}
+        td{background:#fff; border:1px solid rgba(2,6,23,.08); padding:12px 10px}
+        tr td:first-child{border-radius:12px 0 0 12px}
+        tr td:last-child{border-radius:0 12px 12px 0}
+
+        .legend{display:flex; gap:10px; align-items:center; font-size:13px}
+        .dot{width:10px; height:10px; border-radius:50%; background:#16a34a; display:inline-block}
+        .dot.gray{background:#cbd5e1}
+    </style>
+</head>
+<body>
+<header>
+    <div class="container nav">
+        <div class="logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 16l6-8 4 5 6-9"/><path d="M3 21h18"/></svg>
+            <span>ZUS • Symulator emerytalny</span>
+        </div>
+        <div class="toolbar">
+            <a class="btn btn-ghost" href="start.html">Start</a>
+            <a class="btn btn-ghost" href="kreator-1.html">Kreator 1</a>
+            <a class="btn btn-ghost" href="kreator-2.html">Kreator 2</a>
+            <a class="btn btn-primary" href="wynik.html">Wynik</a>
+            <a class="btn btn-ghost" href="dashboard.html">Dashboard</a>
+            <a class="btn btn-ghost" href="raport.html">Raport</a>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+    <section class="grid-2" style="margin-top:16px">
+        <div class="card">
+            <h1 class="title">Twoja prognozowana emerytura</h1>
+            <p class="subtitle">Poniżej kwoty w <strong>wartości nominalnej</strong> i <strong>realnej</strong> oraz szybkie scenariusze odroczenia.</p>
+
+            <div class="grid-3">
+                <div class="kpi"><span class="muted">Kwota nominalna</span><strong id="outNom">—</strong></div>
+                <div class="kpi"><span class="muted">Kwota realna</span><strong id="outReal">—</strong></div>
+                <div class="kpi"><span class="muted">Wsp. zastąpienia</span><strong id="outWr">—</strong></div>
+            </div>
+
+            <div class="area" style="margin-top:16px"></div>
+            <div class="legend" style="margin:10px 0 2px"><span class="dot"></span> Twoja emerytura <span class="dot gray"></span> Prognozowana średnia</div>
+
+            <div class="tabs">
+                <button class="tab active" data-shift="0">Rok 0</button>
+                <button class="tab" data-shift="1">+1 rok</button>
+                <button class="tab" data-shift="2">+2 lata</button>
+                <button class="tab" data-shift="5">+5 lat</button>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:16px">
+                <a class="btn" href="kreator-2.html">Zmień założenia</a>
+                <a class="btn btn-primary" href="dashboard.html">Przejdź do Dashboardu</a>
+                <a class="btn" href="raport.html">Pobierz raport</a>
+            </div>
+        </div>
+
+        <aside class="card">
+            <h2 class="title" style="font-size:20px">Porównania</h2>
+            <table style="margin-top:4px">
+                <tbody id="compareBody">
+                <tr><td>Wobec prognozowanej średniej</td><td><strong id="cmpAvg">—</strong></td></tr>
+                <tr><td>Cel użytkownika</td><td><strong id="cmpGoal">—</strong></td></tr>
+                <tr><td>Różnica do celu</td><td><strong id="gapToGoal">—</strong></td></tr>
+                </tbody>
+            </table>
+            <div class="card" style="margin-top:12px">
+                <div class="muted">Notatka</div>
+                <div class="muted" style="font-size:13px">Wartości są poglądowe i nie stanowią doradztwa. Szczegóły metodyki w raporcie.</div>
+            </div>
+        </aside>
+    </section>
+</main>
+
+<script>
+    // Prosty mock obliczeń — tylko do prezentacji interfejsu
+    const $ = s => document.querySelector(s);
+    const PLN = v => new Intl.NumberFormat('pl-PL',{style:'currency', currency:'PLN', maximumFractionDigits:0}).format(v||0);
+
+    // Przyjmij wartości startowe (w realnej app byłyby z poprzednich kroków / storage)
+    const baseSalary = 9000;            // przykładowa płaca
+    const goal = 5200;                  // cel użytkownika
+    const yearsLeft = 20;               // lata do emerytury
+    const avgForecast = 4200*(1+yearsLeft*0.01); // bardzo zgrubna "średnia"
+
+    function compute(shift){
+        const base = baseSalary*0.35;                // poglądowa baza
+        const growth = 1 + Math.min(0.8, (yearsLeft+shift)*0.012);
+        const saldoEffect = 600;                      // placeholder wpływu salda
+        const nominal = Math.max(1200, (base + saldoEffect) * growth);
+        const real = nominal * 0.86;
+        const wr = nominal / Math.max(1, baseSalary);
+        return {nominal, real, wr};
+    }
+
+    function updateUI(shift){
+        const {nominal, real, wr} = compute(shift);
+        $('#outNom').textContent = PLN(nominal);
+        $('#outReal').textContent = PLN(real);
+        $('#outWr').textContent = Math.round(wr*100) + '%';
+        // porównania
+        const diffAvg = nominal - avgForecast;
+        $('#cmpAvg').textContent = (diffAvg>0?'+':'') + PLN(diffAvg);
+        $('#cmpGoal').textContent = PLN(goal);
+        const gap = goal - nominal;
+        $('#gapToGoal').textContent = (gap>0? PLN(gap)+' poniżej celu' : 'cel osiągnięty lub powyżej');
+    }
+
+    // Tabs — scenariusze
+    document.querySelectorAll('.tab').forEach(t=> t.addEventListener('click', ()=>{
+        document.querySelectorAll('.tab').forEach(x=> x.classList.remove('active'));
+        t.classList.add('active');
+        updateUI(Number(t.dataset.shift||0));
+    }));
+
+    // Inicjalny stan
+    updateUI(0);
+</script>
+</body>
+</html>

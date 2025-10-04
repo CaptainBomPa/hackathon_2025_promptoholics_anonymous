@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <title>Symulator ZUS – Kreator · Dane podstawowe</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <!-- UWAGA: wersja NIERESPONSYWNA (stała szerokość) zgodnie z prośbą -->
+    <style>
+        /* Paleta i typografia */
+        html,body{margin:0; padding:0; background:#f7fafc; color:#0f172a; font:16px/1.5 "Inter", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial}
+        a{color:inherit; text-decoration:none}
+
+        /* Stały layout (brak responsywności) */
+        .container{width:1160px; margin:0 auto; padding:28px}
+        header{position:relative; background:#ffffff; border-bottom:1px solid rgba(2,6,23,.08)}
+        .nav{display:flex; align-items:center}
+        .logo{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.3px}
+        .logo svg{width:28px; height:28px}
+        .spacer{flex:1}
+        .toolbar{display:flex; gap:10px; margin-left:auto}
+
+        /* Komponenty */
+        .btn{background:linear-gradient(180deg, rgba(2,6,23,.02), rgba(2,6,23,.0)); border:1px solid rgba(2,6,23,.08); border-radius:14px; padding:10px 14px; font-weight:600; cursor:pointer}
+        .btn-primary{background:linear-gradient(180deg, rgba(22,163,74,.25), rgba(22,163,74,.12)); border-color:rgba(22,163,74,.45)}
+        .card{background:#fff; border:1px solid rgba(2,6,23,.08); border-radius:18px; padding:22px; box-shadow:0 10px 30px rgba(2,6,23,.05)}
+        .title{font-size:26px; line-height:1.25; margin:0 0 8px}
+        .subtitle{color:#64748b; margin:0 0 18px}
+        .grid-2{display:grid; grid-template-columns: 740px 380px; gap:20px}
+        .grid-3{display:grid; grid-template-columns: repeat(3, 1fr); gap:16px}
+        .field{display:flex; flex-direction:column; gap:6px}
+        .field label{color:#64748b; font-size:14px}
+        .input{display:flex; align-items:center; border:1px solid rgba(2,6,23,.08); background:rgba(255,255,255,.65); padding:12px 14px; border-radius:12px}
+        .input input, .input select{flex:1; border:0; outline:0; background:transparent; font-size:16px; color:#0f172a}
+        .pill{display:inline-flex; align-items:center; gap:8px; font-size:12px; padding:8px 12px; border:1px solid rgba(2,6,23,.08); border-radius:999px; background:#fff; cursor:pointer}
+        .hint{color:#64748b; font-size:14px}
+        .kpi{display:flex; align-items:center; justify-content:space-between; border:1px dashed rgba(2,6,23,.15); border-radius:14px; padding:12px 14px}
+
+        /* Stepper + pasek postępu */
+        .stepper{display:flex; align-items:center; gap:10px; margin:14px 0}
+        .dot{width:28px; height:28px; border-radius:999px; display:grid; place-items:center; border:1px solid rgba(2,6,23,.12); background:#fff}
+        .dot.active{background:linear-gradient(180deg, rgba(22,163,74,.18), rgba(22,163,74,.06)); border-color:rgba(22,163,74,.45)}
+        .line{flex:1; height:2px; background:linear-gradient(90deg, #16a34a, rgba(2,6,23,.08))}
+        .progress{height:8px; border-radius:999px; background:rgba(2,6,23,.06); overflow:hidden}
+        .progress > span{display:block; height:100%; width:66%; background:linear-gradient(90deg, #16a34a, #8bdea8)}
+
+        /* Błędy */
+        .error{display:none; color:#b91c1c; font-size:12px}
+        .invalid{box-shadow:0 0 0 4px rgba(185,28,28,.08) inset}
+    </style>
+</head>
+<body>
+<header>
+    <div class="container nav">
+        <div class="logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 16l6-8 4 5 6-9"/><path d="M3 21h18"/></svg>
+            <span>ZUS • Symulator emerytalny</span>
+        </div>
+        <div class="spacer"></div>
+        <div class="toolbar">
+            <button class="btn">A−</button>
+            <button class="btn">A+</button>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+    <div class="stepper" aria-hidden="true">
+        <div class="dot active">1</div><div class="line"></div><div class="dot">2</div><div class="line"></div><div class="dot">✔</div>
+    </div>
+    <div class="progress" aria-hidden="true"><span></span></div>
+
+    <div class="grid-2" style="margin-top:16px">
+        <section class="card">
+            <h1 class="title">Kreator · Dane podstawowe</h1>
+            <p class="subtitle">Wypełnij wymagane pola. Później skonfigurujesz opcje dodatkowe.</p>
+
+            <div class="grid-3">
+                <div class="field">
+                    <label for="age">Wiek <span class="hint">(16–80)</span></label>
+                    <div class="input"><input id="age" type="number" min="16" max="80" placeholder="np. 33" /></div>
+                    <div class="error" id="errAge">Podaj wiek 16–80.</div>
+                </div>
+                <div class="field">
+                    <label for="sex">Płeć</label>
+                    <div class="input">
+                        <select id="sex">
+                            <option value="K">Kobieta</option>
+                            <option value="M">Mężczyzna</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="salary">Wynagrodzenie brutto (PLN/mc)</label>
+                    <div class="input"><input id="salary" type="number" min="0" placeholder="np. 9200"/><span style="margin-left:6px">PLN</span></div>
+                    <div class="error" id="errSalary">Podaj kwotę &gt; 0.</div>
+                    <div style="margin-top:8px; display:flex; gap:8px">
+                        <button class="pill" data-s="6000">6 000</button>
+                        <button class="pill" data-s="9000">9 000</button>
+                        <button class="pill" data-s="12000">12 000</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-3" style="margin-top:12px">
+                <div class="field">
+                    <label for="start">Rok rozpoczęcia pracy</label>
+                    <div class="input"><input id="start" type="number" min="1970" max="2100" placeholder="np. 2010"/></div>
+                    <div class="error" id="errStart">Sprawdź rok rozpoczęcia.</div>
+                </div>
+                <div class="field">
+                    <label for="end">Planowany rok zakończenia aktywności</label>
+                    <div class="input"><input id="end" type="number" min="2025" max="2100" placeholder="np. 2065"/></div>
+                    <div class="error" id="errEnd">Rok zakończenia musi być ≥ bieżący i ≥ roku startu.</div>
+                </div>
+                <div class="field">
+                    <label for="goal">Cel emerytalny (PLN/mc)</label>
+                    <div class="input"><input id="goal" type="number" min="0" placeholder="np. 5200"/><span style="margin-left:6px">PLN</span></div>
+                </div>
+            </div>
+
+            <p class="hint" style="margin-top:12px">Wynagrodzenia historyczne będą odwrotnie indeksowane ścieżką wzrostu płac (opis metodyki w raporcie).</p>
+
+            <div style="display:flex; gap:10px; margin-top:16px">
+                <a class="btn" href="start.html">Wstecz</a>
+                <a id="next" class="btn btn-primary" href="kreator-2.html" aria-disabled="true">Dalej</a>
+            </div>
+        </section>
+
+        <aside class="card">
+            <h2 class="title" style="font-size:20px">Podpowiedzi</h2>
+            <ul class="hint" style="margin:8px 0 0 18px">
+                <li>Po wyborze płci sugerujemy rok przejścia (K: 60, M: 65).</li>
+                <li>Minimalny zakres wieku to 16–80 lat.</li>
+                <li>Cel możesz zmienić później, to tylko punkt odniesienia.</li>
+            </ul>
+            <div class="kpi" style="margin-top:14px"><span class="hint">Średnia emerytura (prognoza)</span><strong>4 200 PLN</strong></div>
+        </aside>
+    </div>
+</main>
+
+<script>
+    // Util
+    const $ = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+
+    // Podsuwaj typowe wartości
+    $$(".pill").forEach(p=> p.addEventListener('click', ()=>{ $('#salary').value = p.dataset.s; validate(); }));
+
+    // Sugestie lat na podstawie wieku i płci
+    function suggest(){
+        const now = new Date().getFullYear();
+        const age = Number($('#age').value||30);
+        const sex = $('#sex').value||'K';
+        const retAge = sex==='K'?60:65;
+        if(!$('#start').value) $('#start').value = now - Math.max(0, age-22);
+        if(!$('#end').value) $('#end').value = now + Math.max(1, retAge - age);
+    }
+
+    // Walidacja
+    function validate(){
+        let ok = true;
+        const age = Number($('#age').value);
+        if(!(age>=16 && age<=80)){ ok=false; $('#errAge').style.display='block'; $('#age').parentElement.classList.add('invalid'); } else { $('#errAge').style.display='none'; $('#age').parentElement.classList.remove('invalid'); }
+        const sal = Number($('#salary').value);
+        if(!(sal>0)){ ok=false; $('#errSalary').style.display='block'; $('#salary').parentElement.classList.add('invalid'); } else { $('#errSalary').style.display='none'; $('#salary').parentElement.classList.remove('invalid'); }
+        const sY = Number($('#start').value);
+        if(!(sY>=1970 && sY<=2100)){ ok=false; $('#errStart').style.display='block'; $('#start').parentElement.classList.add('invalid'); } else { $('#errStart').style.display='none'; $('#start').parentElement.classList.remove('invalid'); }
+        const eY = Number($('#end').value);
+        const now = new Date().getFullYear();
+        if(!(eY>=now && eY>=sY)){ ok=false; $('#errEnd').style.display='block'; $('#end').parentElement.classList.add('invalid'); } else { $('#errEnd').style.display='none'; $('#end').parentElement.classList.remove('invalid'); }
+        // przycisk Dalej
+        const next = $('#next');
+        next.setAttribute('aria-disabled', String(!ok));
+        next.style.pointerEvents = ok ? 'auto' : 'none';
+        next.style.opacity = ok ? '1' : '.6';
+        return ok;
+    }
+
+    ['input','change','blur'].forEach(evt=> ['#age','#sex','#salary','#start','#end','#goal'].forEach(id=> $(id).addEventListener(evt, ()=>{ if(id==='#sex'||id==='#age'){ $('#end').value=''; suggest(); } validate(); })));
+    suggest();
+    validate();
+</script>
+</body>
+</html>

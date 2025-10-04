@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <title>Symulator ZUS — Panel administratora (minimal)</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <!-- WERSJA NIERESPONSYWNA (stała szerokość). Minimal, czysto, bez cieni. -->
+    <style>
+        :root{
+            --bg:#f8fafc;         /* tło */
+            --surface:#ffffff;    /* powierzchnie */
+            --ink:#0f172a;        /* tekst */
+            --muted:#64748b;      /* opis */
+            --line:#e2e8f0;       /* linie */
+            --accent:#16a34a;     /* akcent zielony */
+            --accent-ink:#065f46; /* ciemny akcent */
+        }
+        html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Inter",system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+        .container{width:1160px; margin:0 auto; padding:28px}
+        header{border-bottom:1px solid var(--line); background:var(--surface)}
+        .nav{display:flex; align-items:center}
+        .logo{font-weight:800; letter-spacing:.2px}
+        .toolbar{margin-left:auto; display:flex; gap:8px}
+        .link{padding:8px 10px; border-radius:8px; text-decoration:none; color:var(--muted)}
+        .link.active{color:var(--accent-ink); background:#eafff0}
+
+        /* Layout: dwa bloki na wys. treści */
+        .grid{display:grid; grid-template-columns: 820px 320px; gap:20px; align-items:start}
+
+        /* Minimalne komponenty */
+        .h1{font-size:24px; margin:12px 0 4px}
+        .sub{color:var(--muted); margin:0 0 18px}
+        .row{display:flex; gap:10px; align-items:center}
+        .btn{border:1px solid var(--line); background:var(--surface); padding:10px 14px; border-radius:10px; cursor:pointer}
+        .btn.primary{border-color:#96e6b8; background:#eafff0; color:var(--accent-ink)}
+        .seg{display:inline-flex; border:1px solid var(--line); border-radius:10px; overflow:hidden}
+        .seg button{border:0; background:var(--surface); padding:8px 12px; cursor:pointer; color:var(--muted)}
+        .seg button.active{background:#eefcf3; color:var(--accent-ink)}
+        .chip{border:1px solid var(--line); border-radius:999px; padding:6px 10px; color:var(--muted)}
+
+        /* Filtry */
+        .filters{display:flex; gap:10px; align-items:end; border:1px solid var(--line); background:var(--surface); padding:12px; border-radius:12px}
+        .field{display:flex; flex-direction:column; gap:6px}
+        .label{font-size:12px; color:var(--muted)}
+        .input{display:flex; align-items:center; gap:8px; border:1px solid var(--line); padding:8px 10px; border-radius:8px; background:#fff}
+        .input input,.input select{border:0; outline:0; background:transparent; font:inherit; color:inherit; width:160px}
+
+        /* Tabela — bez ramek, zebra, sticky head, monospace liczby */
+        .table-wrap{border:1px solid var(--line); background:var(--surface); border-radius:12px; overflow:hidden}
+        table{width:100%; border-collapse:collapse}
+        thead th{position:sticky; top:0; z-index:2; background:#f3f8f5; border-bottom:1px solid var(--line); font-size:12px; color:#475569; text-align:left; padding:10px}
+        tbody td{padding:10px; border-bottom:1px solid var(--line)}
+        tbody tr:nth-child(odd){background:#fbfdfc}
+        td.num{font-variant-numeric:tabular-nums; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; text-align:right}
+        td.badge{color:var(--accent-ink)}
+        tbody tr:hover{background:#eefcf3}
+
+        /* Paginacja i stopka listy */
+        .list-footer{display:flex; justify-content:space-between; align-items:center; padding:10px 12px}
+        .muted{color:var(--muted)}
+
+        /* Panel boczny */
+        aside{position:sticky; top:20px}
+        .side{border:1px solid var(--line); background:var(--surface); border-radius:12px; padding:14px}
+        .side h3{margin:0 0 6px; font-size:16px}
+        .kpis{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px}
+        .kpi{border:1px dashed var(--line); border-radius:10px; padding:10px; display:flex; justify-content:space-between; align-items:center}
+
+        /* Ikonka sortowania */
+        .sort{font-size:11px; color:#64748b; margin-left:6px}
+    </style>
+</head>
+<body>
+<header>
+    <div class="container nav">
+        <div class="logo">ZUS • Symulator — Admin</div>
+        <nav class="toolbar">
+            <a class="link" href="start.html">Start</a>
+            <a class="link" href="kreator-1.html">Kreator</a>
+            <a class="link" href="wynik.html">Wynik</a>
+            <a class="link" href="dashboard.html">Dashboard</a>
+            <a class="link active" href="admin.html">Admin</a>
+        </nav>
+    </div>
+</header>
+
+<main class="container">
+    <h1 class="h1">Raport zainteresowania</h1>
+    <p class="sub">Przeglądaj i eksportuj listę użyć narzędzia. Minimalny, czytelny layout bez zbędnych ozdobników.</p>
+
+    <div class="row" style="margin:8px 0 14px">
+        <span class="chip">Symulacje: <strong>3 482</strong></span>
+        <span class="chip">Chorobowe: <strong>58%</strong></span>
+        <span class="chip">Mediana płac: <strong>8 900 PLN</strong></span>
+        <span class="chip">Mediana celu: <strong>5 000 PLN</strong></span>
+        <div class="seg" style="margin-left:auto">
+            <button class="active">Dzisiaj</button>
+            <button>7 dni</button>
+            <button>30 dni</button>
+            <button>Rok</button>
+        </div>
+        <button class="btn primary">Eksport .xls</button>
+    </div>
+
+    <div class="filters">
+        <div class="field"><label class="label">Data od</label><div class="input"><input type="date" value="2025-01-01"></div></div>
+        <div class="field"><label class="label">Data do</label><div class="input"><input type="date" value="2025-12-31"></div></div>
+        <div class="field"><label class="label">Płeć</label><div class="input"><select><option>Wszystkie</option><option>K</option><option>M</option></select></div></div>
+        <div class="field"><label class="label">Chorobowe</label><div class="input"><select><option>Wszystkie</option><option>Uwzględniono</option><option>Nie</option></select></div></div>
+        <div class="field"><label class="label">Wynagrodzenie</label><div class="input"><select><option>Wszystkie</option><option>< 5k</option><option>5–8k</option><option>8–12k</option><option>> 12k</option></select></div></div>
+        <button class="btn">Filtruj</button>
+        <button class="btn">Reset</button>
+    </div>
+
+    <section class="grid" style="margin-top:16px">
+        <div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Data <span class="sort">⇅</span></th>
+                        <th>Godzina <span class="sort">⇅</span></th>
+                        <th>Oczekiwana emerytura <span class="sort">⇅</span></th>
+                        <th>Wiek <span class="sort">⇅</span></th>
+                        <th>Płeć</th>
+                        <th>Wynagrodzenie <span class="sort">⇅</span></th>
+                        <th>Chorobowe</th>
+                        <th>Saldo ZUS <span class="sort">⇅</span></th>
+                        <th>Saldo subkonta <span class="sort">⇅</span></th>
+                        <th>Nominalna <span class="sort">⇅</span></th>
+                        <th>Realna <span class="sort">⇅</span></th>
+                        <th>Kod pocztowy</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td>2025-10-04</td>
+                        <td>11:20</td>
+                        <td class="num">5 200 PLN</td>
+                        <td class="num">33</td>
+                        <td class="badge">K</td>
+                        <td class="num">9 200 PLN</td>
+                        <td>Średnie</td>
+                        <td class="num">120 000 PLN</td>
+                        <td class="num">38 000 PLN</td>
+                        <td class="num">6 450 PLN</td>
+                        <td class="num">5 545 PLN</td>
+                        <td>02-326</td>
+                    </tr>
+                    <tr>
+                        <td>2025-10-03</td>
+                        <td>15:02</td>
+                        <td class="num">4 500 PLN</td>
+                        <td class="num">41</td>
+                        <td class="badge">M</td>
+                        <td class="num">7 800 PLN</td>
+                        <td>Brak</td>
+                        <td class="num">—</td>
+                        <td class="num">—</td>
+                        <td class="num">4 980 PLN</td>
+                        <td class="num">4 280 PLN</td>
+                        <td>—</td>
+                    </tr>
+                    <tr>
+                        <td>2025-10-02</td>
+                        <td>09:47</td>
+                        <td class="num">6 000 PLN</td>
+                        <td class="num">28</td>
+                        <td class="badge">K</td>
+                        <td class="num">12 500 PLN</td>
+                        <td>Własne</td>
+                        <td class="num">80 000 PLN</td>
+                        <td class="num">52 000 PLN</td>
+                        <td class="num">7 250 PLN</td>
+                        <td class="num">6 235 PLN</td>
+                        <td>31-559</td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div class="list-footer">
+                    <span class="muted">3 wiersze • Strona 1 z 12</span>
+                    <div class="row"><button class="btn">◀︎</button><button class="btn">▶︎</button></div>
+                </div>
+            </div>
+        </div>
+
+        <aside>
+            <div class="side">
+                <h3>Eksport szybki</h3>
+                <div class="row" style="margin-top:6px">
+                    <div class="input"><select style="width:220px"><option>Ostatnie 7 dni</option><option>Ostatnie 30 dni</option><option>Rok bieżący</option></select></div>
+                    <button class="btn primary">Pobierz</button>
+                </div>
+                <div style="margin:12px 0; height:1px; background:var(--line)"></div>
+                <h3>Notatka</h3>
+                <div class="input" style="margin-top:6px"><textarea rows="7" style="width:100%; border:0; outline:0; font:inherit"></textarea></div>
+                <div class="row" style="margin-top:8px"><button class="btn">Zapisz</button><button class="btn">Wyczyść</button></div>
+            </div>
+        </aside>
+    </section>
+</main>
+</body>
+</html>
