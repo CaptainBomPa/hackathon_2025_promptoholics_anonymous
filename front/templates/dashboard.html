@@ -2,53 +2,84 @@
 <html lang="pl">
 <head>
     <meta charset="utf-8" />
-    <title>Symulator ZUS – Dashboard</title>
+    <title>Symulator ZUS – Dashboard (Layout v4)</title>
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <!-- UWAGA: wersja NIERESPONSYWNA (stała szerokość) -->
+    <!-- Stała szerokość 1160px, nieresponsywne, prosto i czytelnie -->
     <style>
-        /* Paleta i typografia */
-        html,body{margin:0; padding:0; background:#f7fafc; color:#0f172a; font:16px/1.5 "Inter", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial}
+        *,*::before,*::after{box-sizing:border-box}
+        html,body{margin:0;padding:0}
+        img,svg{display:block;max-width:100%;height:auto}
+
+        :root{
+            --bg:#f6f8fb; --surface:#fff; --ink:#0f172a; --muted:#64748b; --line:#e6eaf0;
+            --accent:#128c47; --accent-soft:#e9f7ef; --radius:14px; --shadow:0 10px 30px rgba(2,6,23,.05);
+            --w:1160px; --gap:20px;
+        }
+
+        body{background:var(--bg); color:var(--ink); font:15px/1.55 "Inter", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial}
         a{color:inherit; text-decoration:none}
-        strong{font-weight:700}
+        .container{width:var(--w); margin:0 auto; padding:24px}
 
-        /* Stały layout */
-        .container{width:1160px; margin:0 auto; padding:28px}
-        header{background:#ffffff; border-bottom:1px solid rgba(2,6,23,.08)}
-        .nav{display:flex; align-items:center}
-        .logo{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.3px}
-        .logo svg{width:28px; height:28px}
-        .toolbar{display:flex; gap:10px; margin-left:auto}
+        header{background:var(--surface); border-bottom:1px solid var(--line)}
+        .nav{display:flex; align-items:center; gap:10px}
+        .logo{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.2px}
+        .logo svg{width:26px; height:26px}
+        .toolbar{margin-left:auto; display:flex; gap:8px}
 
-        /* Komponenty */
-        .btn{background:linear-gradient(180deg, rgba(2,6,23,.02), rgba(2,6,23,.0)); border:1px solid rgba(2,6,23,.08); border-radius:14px; padding:10px 14px; font-weight:600; cursor:pointer}
-        .btn-primary{background:linear-gradient(180deg, rgba(22,163,74,.25), rgba(22,163,74,.12)); border-color:rgba(22,163,74,.45)}
-        .btn-ghost{background:transparent}
-        .card{background:#fff; border:1px solid rgba(2,6,23,.08); border-radius:18px; padding:22px; box-shadow:0 10px 30px rgba(2,6,23,.05)}
-        .title{font-size:26px; line-height:1.25; margin:0 0 8px}
-        .subtitle{color:#64748b; margin:0 0 18px}
-        .grid-3{display:grid; grid-template-columns: 360px 360px 360px; gap:20px}
-        .grid-2{display:grid; grid-template-columns: 740px 380px; gap:20px}
-        .field{display:flex; flex-direction:column; gap:6px}
-        .field label{color:#64748b; font-size:14px}
-        .input{display:flex; align-items:center; border:1px solid rgba(2,6,23,.08); background:rgba(255,255,255,.65); padding:12px 14px; border-radius:12px}
-        .input input, .input select, .input textarea{flex:1; border:0; outline:0; background:transparent; font-size:16px; color:#0f172a}
-        .muted{color:#64748b}
-        .kpi{display:flex; align-items:center; justify-content:space-between; border:1px dashed rgba(2,6,23,.15); border-radius:14px; padding:12px 14px}
+        .btn{border:1px solid var(--line); background:var(--surface); padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600}
+        .btn:hover{box-shadow:0 0 0 3px rgba(18,140,71,.08)}
+        .btn-primary{border-color:#9fe0b8; background:var(--accent-soft); color:var(--accent)}
 
-        /* Tabele */
-        table{width:100%; border-collapse:separate; border-spacing:0 10px}
-        th{font-size:12px; color:#64748b; text-align:left; padding:0 10px}
-        td{background:#fff; border:1px solid rgba(2,6,23,.08); padding:10px}
-        tr td:first-child{border-radius:12px 0 0 12px}
-        tr td:last-child{border-radius:0 12px 12px 0}
+        .title{font-size:24px; line-height:1.2; margin:0 0 6px}
+        .subtitle{color:var(--muted); margin:0 0 14px}
 
-        /* Pseudo-wykresy */
-        .bar{height:120px; display:grid; grid-template-columns:repeat(8,1fr); gap:10px; align-items:end}
-        .bar span{display:block; background:linear-gradient(180deg, rgba(22,163,74,.35), rgba(22,163,74,.15)); border:1px solid rgba(22,163,74,.35); border-radius:10px}
-        .area{position:relative; height:160px; overflow:hidden; border-radius:12px; background:linear-gradient(180deg, rgba(22,163,74,.10), rgba(22,163,74,.05))}
-        .area::after{content:""; position:absolute; inset:0; background:conic-gradient(from 190deg at 0 100%, rgba(22,163,74,.35), rgba(22,163,74,.05)); opacity:.45}
+        .card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:18px}
+        .grid-2{display:grid; grid-template-columns: 760px 360px; gap:var(--gap)}
+        .grid-3{display:grid; grid-template-columns: 360px 360px 360px; gap:var(--gap)}
 
-        .divider{height:1px; background:rgba(2,6,23,.08); margin:14px 0}
+        .row{display:flex; align-items:center; gap:10px}
+        .muted{color:var(--muted)}
+        .hint{font-size:12px; color:var(--muted)}
+
+        /* Pasek KPI */
+        .kpi-row{display:grid; grid-template-columns: repeat(3, 1fr); gap:var(--gap)}
+        .kpi{border:1px dashed var(--line); border-radius:10px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center}
+        .kpi .label{color:var(--muted)}
+
+        /* Definicje (podsumowanie danych wejściowych) */
+        .dl{display:grid; grid-template-columns: 180px 1fr; gap:6px 14px; margin:0}
+        .dl dt{color:var(--muted); font-size:13px}
+        .dl dd{margin:0}
+
+        /* Formularze / pola */
+        .field{display:flex; flex-direction:column; gap:6px; min-width:0}
+        .field label{color:var(--muted); font-size:13px}
+        .input{display:flex; align-items:center; gap:8px; border:1px solid var(--line); background:#fff; padding:9px 12px; border-radius:10px; width:100%}
+        .input input,.input select,.input textarea{flex:1; min-width:0; border:0; outline:0; background:transparent; font:inherit; color:inherit}
+
+        /* Tabele — fixed, zero rozsypek */
+        table{width:100%; table-layout:fixed; border-collapse:separate; border-spacing:0 8px}
+        th{font-size:12px; color:var(--muted); text-align:left; padding:0 10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+        td{background:#fff; border:1px solid var(--line); padding:8px 10px; vertical-align:top; overflow:hidden}
+        tr td:first-child{border-radius:10px 0 0 10px}
+        tr td:last-child{border-radius:0 10px 10px 0}
+        td .input{padding:6px 10px}
+        td .input input, td .input select{font-size:14px}
+
+        .divider{height:1px; background:var(--line); margin:12px 0}
+
+        /* Wizualki — placeholdery trzymają wymiar */
+        .area{position:relative; height:160px; border-radius:10px; background:linear-gradient(180deg, rgba(18,140,71,.10), rgba(18,140,71,.04)); overflow:hidden}
+        .area::after{content:""; position:absolute; inset:0; background:conic-gradient(from 200deg at 0 100%, rgba(18,140,71,.28), rgba(18,140,71,.05)); opacity:.45}
+
+        /* Zakładki mini (prosto) */
+        .tabs{display:flex; gap:8px}
+        .tab{border:1px solid var(--line); background:#fff; padding:8px 12px; border-radius:10px; cursor:pointer}
+        .tab.active{background:var(--accent-soft); color:var(--accent); border-color:#9fe0b8}
+
+        /* Range */
+        input[type=range]{width:100%}
+        .value{font-variant-numeric:tabular-nums}
     </style>
 </head>
 <body>
@@ -58,119 +89,238 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 16l6-8 4 5 6-9"/><path d="M3 21h18"/></svg>
             <span>ZUS • Symulator emerytalny</span>
         </div>
-        <div class="toolbar">
-            <a class="btn btn-ghost" href="start.html">Start</a>
-            <a class="btn btn-ghost" href="kreator-1.html">Kreator 1</a>
-            <a class="btn btn-ghost" href="kreator-2.html">Kreator 2</a>
-            <a class="btn btn-ghost" href="wynik.html">Wynik</a>
+        <nav class="toolbar">
+            <a class="btn" href="start.html">Start</a>
+            <a class="btn" href="kreator-1.html">Kreator 1</a>
+            <a class="btn" href="kreator-2.html">Kreator 2</a>
+            <a class="btn" href="wynik.html">Wynik</a>
             <a class="btn btn-primary" href="dashboard.html">Dashboard</a>
-            <a class="btn btn-ghost" href="raport.html">Raport</a>
-        </div>
+            <a class="btn" href="raport.html">Raport</a>
+        </nav>
     </div>
 </header>
 
 <main class="container">
-    <h1 class="title">Dashboard symulatora</h1>
-    <p class="subtitle">Zmieniaj założenia i porównuj scenariusze. Ta strona to "centrum dowodzenia" do zabawy parametrami.</p>
+    <h1 class="title">Dashboard</h1>
+    <p class="subtitle">Przejrzyj dane wejściowe, wprowadź okresy wynagrodzeń i przerw oraz zasymuluj pracę po osiągnięciu wieku emerytalnego.</p>
 
-    <section class="grid-3">
-        <!-- Kafelek 1: Historia i przyszłość płac -->
+    <!-- 1) Pasek KPI głównych wyników -->
+    <section class="kpi-row">
+        <div class="kpi"><span class="label">Kwota nominalna</span><strong id="kpiNom">—</strong></div>
+        <div class="kpi"><span class="label">Kwota realna</span><strong id="kpiReal">—</strong></div>
+        <div class="kpi"><span class="label">Wsp. zastąpienia</span><strong id="kpiWR">—</strong></div>
+    </section>
+
+    <!-- 2) Podsumowanie danych wejściowych (z kreatora) + panel boczny z saldami -->
+    <section class="grid-2" style="margin-top:20px">
         <div class="card">
-            <h2 class="title" style="font-size:20px">Historia i przyszłość płac</h2>
-            <div class="muted">Edytuj wartości roczne (przykładowe dane).</div>
+            <h2 class="title" style="font-size:20px">Dane wejściowe (z kreatora)</h2>
             <div class="divider"></div>
-            <table>
-                <thead>
-                <tr><th>Rok</th><th>Kwota brutto</th><th>Indeksacja</th></tr>
-                </thead>
-                <tbody>
-                <tr><td>2024</td><td><div class="input"><input type="number" value="9200"/></div></td><td>
-                    <div class="input"><select><option>Domyślna</option><option>Własna</option></select></div>
-                </td></tr>
-                <tr><td>2025</td><td><div class="input"><input type="number" value="9550"/></div></td><td>
-                    <div class="input"><select><option>Domyślna</option><option>Własna</option></select></div>
-                </td></tr>
-                <tr><td>2026</td><td><div class="input"><input type="number" value="9900"/></div></td><td>
-                    <div class="input"><select><option>Domyślna</option><option>Własna</option></select></div>
-                </td></tr>
-                <tr><td>2027</td><td><div class="input"><input type="number" value="10200"/></div></td><td>
-                    <div class="input"><select><option>Domyślna</option><option>Własna</option></select></div>
-                </td></tr>
-                </tbody>
-            </table>
-            <div style="display:flex; gap:10px; margin-top:12px">
-                <button class="btn">Przelicz</button>
-                <button class="btn btn-ghost">Resetuj</button>
-            </div>
+            <dl class="dl">
+                <dt>Wiek</dt>          <dd id="s_age">—</dd>
+                <dt>Płeć</dt>          <dd id="s_sex">—</dd>
+                <dt>Pensja (brutto/mc)</dt> <dd id="s_salary">—</dd>
+                <dt>Start pracy</dt>   <dd id="s_start">—</dd>
+                <dt>Koniec aktywności</dt> <dd id="s_end">—</dd>
+                <dt>Cel emerytalny</dt> <dd id="s_goal">—</dd>
+                <dt>Chorobowe</dt>     <dd id="s_sick">—</dd>
+            </dl>
+            <p class="hint" style="margin-top:8px">Jeśli coś się nie zgadza, wróć do kreatora, popraw i wróć tutaj.</p>
         </div>
 
-        <!-- Kafelek 2: Zdarzenia chorobowe -->
-        <div class="card">
-            <h2 class="title" style="font-size:20px">Zdarzenia chorobowe (L4)</h2>
-            <div class="muted">Oś czasu: miesiące z absencją (przykład).</div>
-            <div class="divider"></div>
-            <div class="bar" aria-hidden="true">
-                <span style="height:8%"></span><span style="height:0%"></span><span style="height:20%"></span><span style="height:12%"></span><span style="height:0%"></span><span style="height:18%"></span><span style="height:6%"></span><span style="height:0%"></span>
-            </div>
-            <div class="kpi" style="margin-top:10px"><span class="muted">Łączny wymiar</span><strong>~ 11 dni/rok</strong></div>
-            <div style="display:flex; gap:10px; margin-top:12px">
-                <div class="input" style="flex:1"><input type="number" value="11"/><span style="margin-left:6px">dni/rok</span></div>
-                <button class="btn">Zapisz</button>
-            </div>
-        </div>
-
-        <!-- Kafelek 3: Saldo konta i subkonta -->
-        <div class="card">
+        <aside class="card">
             <h2 class="title" style="font-size:20px">Saldo konta i subkonta</h2>
             <div class="area" style="margin:8px 0 12px"></div>
-            <div class="kpi"><span class="muted">Saldo łącznie</span><strong>—</strong></div>
-            <div class="muted" style="margin-top:10px">Uwaga: dane poglądowe. W prawdziwej wersji dochodzi indeksacja i waloryzacja.</div>
-        </div>
+            <div class="kpi"><span class="label">Saldo łącznie</span><strong id="s_total">—</strong></div>
+            <div class="row" style="margin-top:10px">
+                <div class="field" style="flex:1"><label>Saldo ZUS</label><div class="input"><input id="saldoZUS" type="number" min="0" placeholder="np. 120000"><span>PLN</span></div></div>
+                <div class="field" style="flex:1"><label>Subkonto</label><div class="input"><input id="saldoSUB" type="number" min="0" placeholder="np. 38000"><span>PLN</span></div></div>
+            </div>
+        </aside>
     </section>
 
+    <!-- 3) Okresy wynagrodzeń i przerw (prosty edytor linii życia) -->
+    <section class="card" style="margin-top:20px">
+        <div class="row" style="justify-content:space-between">
+            <h2 class="title" style="font-size:20px">Okresy: wynagrodzenia i przerwy</h2>
+            <div class="tabs" role="tablist">
+                <button class="tab active" id="tabAll">Wszystko</button>
+                <button class="tab" id="tabPay">Tylko wynagrodzenia</button>
+                <button class="tab" id="tabBreak">Tylko przerwy</button>
+            </div>
+        </div>
+        <p class="hint">Dodawaj kolejne odcinki czasu. Dla „Przerwy” pole kwoty jest nieaktywne.</p>
+        <div class="divider"></div>
+
+        <div class="row" style="gap:8px; margin-bottom:10px">
+            <button class="btn" id="addPay">+ Dodaj okres wynagrodzenia</button>
+            <button class="btn" id="addBreak">+ Dodaj okres przerwy</button>
+        </div>
+
+        <table>
+            <colgroup>
+                <col style="width:150px"><col style="width:150px"><col style="width:150px"><col style="width:200px"><col><col style="width:110px">
+            </colgroup>
+            <thead>
+            <tr>
+                <th>Typ</th><th>Od (YYYY‑MM)</th><th>Do (YYYY‑MM)</th><th>Kwota brutto/mc</th><th>Uwagi</th><th>Długość</th>
+            </tr>
+            </thead>
+            <tbody id="periodTbody">
+            <!-- wypełniane JS-em -->
+            </tbody>
+        </table>
+    </section>
+
+    <!-- 4) Praca po emeryturze (suwak) + szybkie przeliczenie wpływu -->
     <section class="grid-2" style="margin-top:20px">
-        <!-- Kafelek 4: Parametry indeksacji -->
         <div class="card">
-            <h2 class="title" style="font-size:20px">Parametry indeksacji</h2>
+            <h2 class="title" style="font-size:20px">Praca po osiągnięciu wieku emerytalnego</h2>
             <div class="divider"></div>
-            <div style="display:flex; gap:14px; align-items:center">
-                <label class="muted" style="width:260px">Ścieżka płac i inflacji</label>
-                <div class="input" style="width:220px"><select><option>Domyślna</option><option>Własna</option></select></div>
-                <div class="input" style="width:220px"><input type="number" value="3"/><span style="margin-left:6px">%/rok</span></div>
+            <div class="field">
+                <label>Dodatkowe lata pracy po emeryturze</label>
+                <input id="extYears" type="range" min="0" max="10" step="1" value="0">
+                <div class="row"><span class="muted">Wybrane:</span> <strong id="extYearsOut" class="value">0 lat</strong></div>
             </div>
-            <div style="display:flex; gap:14px; align-items:center; margin-top:10px">
-                <label class="muted" style="width:260px">Inflacja (symulacyjnie)</label>
-                <div class="input" style="width:220px"><input type="number" value="6"/><span style="margin-left:6px">%/rok</span></div>
-                <button class="btn">Zastosuj</button>
+            <div class="row" style="margin-top:10px">
+                <div class="field" style="flex:1"><label>Wymiar etatu</label><div class="input"><input id="fte" type="number" min="10" max="100" value="100"><span>%</span></div></div>
+                <div class="field" style="flex:1"><label>Rewaloryzacja składek (poglądowo)</label><div class="input"><input id="extIndex" type="number" min="0" max="10" value="2"><span>%/rok</span></div></div>
             </div>
+            <div class="kpi" style="margin-top:12px"><span class="label">Szacowany wpływ</span><strong id="extImpact">—</strong></div>
+            <p class="hint" style="margin-top:8px">Formuły są przykładowe — w wersji docelowej podmienimy na właściwą metodykę.</p>
         </div>
 
-        <!-- Kafelek 5: Scenariusze -->
         <div class="card">
-            <h2 class="title" style="font-size:20px">Scenariusze</h2>
-            <div class="divider"></div>
-            <div style="display:flex; gap:10px">
-                <div class="input" style="flex:1"><input id="scName" type="text" placeholder="Nazwa scenariusza (np. +2 lata, 12k pensja)"/></div>
-                <button class="btn">Zapisz</button>
-            </div>
-            <div style="margin-top:12px">
-                <table>
-                    <thead><tr><th>Nazwa</th><th>Nominalna</th><th>Realna</th><th>Akcje</th></tr></thead>
-                    <tbody>
-                    <tr><td>Domyślny</td><td>—</td><td>—</td><td>
-                        <button class="btn btn-ghost">Wczytaj</button>
-                        <button class="btn btn-ghost">Porównaj</button>
-                    </td></tr>
-                    </tbody>
-                </table>
+            <h2 class="title" style="font-size:20px">Szybki podgląd wyników</h2>
+            <div class="area" style="margin:8px 0 12px"></div>
+            <div class="kpi"><span class="label">Różnica do celu</span><strong id="gapToGoal">—</strong></div>
+            <div class="row" style="margin-top:12px">
+                <button class="btn">Przelicz teraz</button>
+                <button class="btn btn-primary" onclick="alert('Mock: zapis scenariusza')">Zapisz scenariusz</button>
             </div>
         </div>
     </section>
 
-    <div style="display:flex; gap:10px; margin-top:20px">
+    <div class="row" style="margin-top:20px">
         <a class="btn" href="wynik.html">Zobacz wyniki</a>
         <a class="btn btn-primary" href="raport.html">Pobierz raport</a>
     </div>
 </main>
+
+<script>
+    // ====== Utils ======
+    const $ = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+    const PLN = v => new Intl.NumberFormat('pl-PL',{style:'currency', currency:'PLN', maximumFractionDigits:0}).format(v||0);
+    const ym = s => { const [Y,M] = String(s).split('-').map(Number); return {Y, M}; };
+    const monthsBetween = (a,b)=>{ const A=ym(a), B=ym(b); return Math.max(0,(B.Y-A.Y)*12 + (B.M-A.M+1)); };
+    const todayY = new Date().getFullYear();
+
+    // ====== 1) Podsumowanie danych wejściowych (spróbujmy z localStorage; inaczej '—') ======
+    const pref = k => localStorage.getItem(k) || '';
+    function fillSummary(){
+        const age = pref('age'); const sex = pref('sex'); const sal = pref('salary');
+        const start = pref('startYear'); const end = pref('endYear'); const goal = pref('goal');
+        const sick = pref('sick') || '—';
+        $('#s_age').textContent = age || '—';
+        $('#s_sex').textContent = sex==='K'?'Kobieta':(sex==='M'?'Mężczyzna':'—');
+        $('#s_salary').textContent = sal? PLN(+sal): '—';
+        $('#s_start').textContent = start || '—';
+        $('#s_end').textContent = end || '—';
+        $('#s_goal').textContent = goal? PLN(+goal): '—';
+        $('#s_sick').textContent = sick;
+    }
+
+    // ====== 2) Salda i KPI total ======
+    function updateSaldo(){
+        const z = Number($('#saldoZUS').value||0), s = Number($('#saldoSUB').value||0);
+        $('#s_total').textContent = PLN(z+s);
+    }
+    ['input','change'].forEach(evt=> ['#saldoZUS','#saldoSUB'].forEach(id=> $(id).addEventListener(evt, updateSaldo)));
+
+    // ====== 3) Okresy: wynagrodzenia i przerwy ======
+    let periods = [
+        {type:'pay', from:`${todayY-2}-01`, to:`${todayY-1}-12`, amount:9200, note:'etat 1.0'},
+        {type:'break', from:`${todayY-1}-03`, to:`${todayY-1}-05`, amount:null, note:'wychowawczy'},
+        {type:'pay', from:`${todayY}-01`, to:`${todayY}-12`, amount:9550, note:'podwyżka'},
+    ];
+
+    function renderPeriods(filter='all'){
+        const tbody = $('#periodTbody'); tbody.innerHTML='';
+        periods
+            .filter(p=> filter==='all' ? true : (filter==='pay'? p.type==='pay' : p.type==='break'))
+            .forEach((p,i)=>{
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+          <td>
+            <div class="input"><select data-k="type"><option value="pay" ${p.type==='pay'?'selected':''}>Wynagrodzenie</option><option value="break" ${p.type==='break'?'selected':''}>Przerwa</option></select></div>
+          </td>
+          <td><div class="input"><input type="month" value="${p.from}" data-k="from"></div></td>
+          <td><div class="input"><input type="month" value="${p.to}" data-k="to"></div></td>
+          <td>
+            <div class="input"><input type="number" ${p.type==='break'?'disabled':''} value="${p.amount??''}" placeholder="np. 9000" data-k="amount"><span>PLN</span></div>
+          </td>
+          <td><div class="input"><input type="text" value="${p.note||''}" placeholder="opcjonalnie" data-k="note"></div></td>
+          <td><span class="muted">${monthsBetween(p.from,p.to)} mies.</span></td>`;
+                // Handlery
+                tr.querySelectorAll('[data-k]').forEach(el=>{
+                    el.addEventListener('input', ()=>{
+                        const k = el.getAttribute('data-k');
+                        let v = el.value;
+                        if(k==='amount') v = v? Number(v): null;
+                        periods[i][k] = (k==='type')? v : v;
+                        // włącz/wyłącz kwotę dla przerwy
+                        const amountInput = tr.querySelector('[data-k="amount"]');
+                        if(amountInput){ amountInput.disabled = (tr.querySelector('[data-k="type"]').value==='break'); }
+                        // odśwież długość
+                        tr.querySelector('td:last-child .muted').textContent = monthsBetween(tr.querySelector('[data-k="from"]').value, tr.querySelector('[data-k="to"]').value) + ' mies.';
+                    });
+                });
+                tbody.appendChild(tr);
+            });
+    }
+
+    $('#addPay').addEventListener('click', ()=>{ periods.push({type:'pay', from:`${todayY}-01`, to:`${todayY}-12`, amount:9000, note:''}); renderPeriods(activeTab); });
+    $('#addBreak').addEventListener('click', ()=>{ periods.push({type:'break', from:`${todayY}-01`, to:`${todayY}-03`, amount:null, note:'urlop wychowawczy'}); renderPeriods(activeTab); });
+
+    let activeTab = 'all';
+    $('#tabAll').addEventListener('click', ()=>{ activeTab='all'; setTabs(); renderPeriods('all'); });
+    $('#tabPay').addEventListener('click', ()=>{ activeTab='pay'; setTabs(); renderPeriods('pay'); });
+    $('#tabBreak').addEventListener('click', ()=>{ activeTab='break'; setTabs(); renderPeriods('break'); });
+    function setTabs(){ $$('.tab').forEach(t=> t.classList.remove('active')); if(activeTab==='all') $('#tabAll').classList.add('active'); if(activeTab==='pay') $('#tabPay').classList.add('active'); if(activeTab==='break') $('#tabBreak').classList.add('active'); }
+
+    // ====== 4) Praca po emeryturze (suwaki) ======
+    const BASE = 6000; // kwota odniesienia mock
+    function pluralYears(n){ return n==1? 'rok' : (n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 'lata' : 'lat'); }
+    function updateExt(){
+        const years = Number($('#extYears')?.value||0);
+        const fte = Number($('#fte')?.value||100);
+        const idx = Number($('#extIndex')?.value||0);
+        $('#extYearsOut').textContent = `${years} ${pluralYears(years)}`;
+        const effectPct = Math.min(60, +((years * (fte/100) * (3 + 0.5*idx))).toFixed(1));
+        $('#extImpact').textContent = `+${effectPct}% (+${PLN(Math.round(BASE*effectPct/100))}/mc)`;
+    }
+    ['extYears','fte','extIndex'].forEach(id=> $("#"+id).addEventListener('input', updateExt));
+
+    // ====== 5) Szybki podgląd KPI (mock) ======
+    function updateKPI(){
+        const sal = Number(localStorage.getItem('salary')||9000);
+        const nominal = Math.max(1200, sal*0.35) + (Number($('#saldoZUS').value||0)+Number($('#saldoSUB').value||0))/240; // poglądowo
+        const real = nominal*0.86;
+        const wr = nominal/Math.max(1,sal);
+        $('#kpiNom').textContent = PLN(nominal);
+        $('#kpiReal').textContent = PLN(real);
+        $('#kpiWR').textContent = Math.round(wr*100)+'%';
+        const goal = Number(localStorage.getItem('goal')||5200);
+        const gap = goal - nominal; $('#gapToGoal').textContent = gap>0? (PLN(gap)+' poniżej celu') : 'cel osiągnięty lub powyżej';
+    }
+
+    // ====== Init ======
+    fillSummary();
+    updateSaldo();
+    renderPeriods('all');
+    updateExt();
+    updateKPI();
+</script>
 </body>
 </html>

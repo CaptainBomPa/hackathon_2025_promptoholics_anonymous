@@ -1,400 +1,477 @@
 import React from 'react';
 import {
-  Box,
-  Grid,
-  Paper,
-  Typography,
-  Card,
-  CardContent,
-  LinearProgress,
-  Skeleton,
-  Alert,
+    Box,
+    Paper,
+    Typography,
+    Card,
+    CardContent,
+    LinearProgress,
+    Skeleton,
+    Alert,
+    Tooltip,
 } from '@mui/material';
 import {
-  TrendingUp,
-  AccountBalance,
-  Assessment,
-  Timeline,
+    TrendingUp,
+    AccountBalance,
+    Assessment,
+    Timeline,
 } from '@mui/icons-material';
 import { useDashboard } from '../../contexts/DashboardContext';
 import { zusColors } from '../../constants/zus-colors';
 import { formatCurrency } from '../../utils/pension-formatting';
 import { ZUSAccountGrowthChart, SalaryProjectionChart } from './charts';
 
+const CARD_MIN_HEIGHT = 180; // jedna wysokość dla wszystkich kart
+
 /**
  * Dashboard Main Content Component
- * Displays charts, results, and visualizations in responsive grid layout
+ * Displays charts, results, and visualizations in responsive layout
  */
 const DashboardMainContent = () => {
-  const { state, computed } = useDashboard();
+    const { state, computed } = useDashboard();
 
-  return (
-    <Box sx={{ flex: 1, p: 3 }}>
-      {/* Error display */}
-      {computed.hasErrors && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          <Typography variant="body2">
-            Wykryto błędy w parametrach. Sprawdź ustawienia w panelu bocznym.
-          </Typography>
-        </Alert>
-      )}
+    return (
+        <Box sx={{ flex: 1, p: 3 }}>
+            {/* Error display */}
+            {computed.hasErrors && (
+                <Alert severity="error" sx={{ mb: 3 }}>
+                    <Typography variant="body2">
+                        Wykryto błędy w parametrach. Sprawdź ustawienia w panelu bocznym.
+                    </Typography>
+                </Alert>
+            )}
 
-      {/* Loading indicator */}
-      {state.uiState.isCalculating && (
-        <Box sx={{ mb: 3 }}>
-          <LinearProgress />
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Przeliczanie wyników...
-          </Typography>
-        </Box>
-      )}
+            {/* Loading indicator */}
+            {state.uiState.isCalculating && (
+                <Box sx={{ mb: 3 }}>
+                    <LinearProgress />
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                        Przeliczanie wyników...
+                    </Typography>
+                </Box>
+            )}
 
-      {/* Results Summary Section */}
-      <Box
-        sx={{
-          mb: 4,
-          p: 3,
-          borderRadius: 3,
-          background: `linear-gradient(135deg, ${zusColors.primary}08 0%, ${zusColors.info}05 100%)`,
-          border: `1px solid ${zusColors.primary}20`,
-          boxShadow: '0 4px 20px rgba(0, 153, 63, 0.1)',
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-          <Box
-            sx={{
-              p: 1.5,
-              borderRadius: 2,
-              background: `linear-gradient(135deg, ${zusColors.primary} 0%, ${zusColors.info} 100%)`,
-              boxShadow: `0 6px 20px ${zusColors.primary}30`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Assessment sx={{ color: 'white', fontSize: 28 }} />
-          </Box>
-          <Typography
-            variant="h5"
-            sx={{
-              fontWeight: 700,
-              background: `linear-gradient(135deg, ${zusColors.primary} 0%, ${zusColors.dark} 100%)`,
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            Podsumowanie wyników
-          </Typography>
-        </Box>
-
-        {/* Key metrics cards - różnorodne kolory */}
-        <Grid container spacing={3}>
-          <Grid item xs={12} sm={6} md={3}>
-            <ResultCard
-              title="Emerytura rzeczywista"
-              value={state.results.realAmountDeflated || 2950}
-              subtitle="w dzisiejszych cenach"
-              icon={<AccountBalance />}
-              color={zusColors.info}
-              loading={state.uiState.isCalculating}
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <ResultCard
-              title="Emerytura nominalna"
-              value={state.results.actualAmountPLN || 3850}
-              subtitle="w przyszłych cenach"
-              icon={<TrendingUp />}
-              color={zusColors.primary}
-              loading={state.uiState.isCalculating}
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <ResultCard
-              title="Stopa zastąpienia"
-              value={state.results.replacementRatePct || 68.5}
-              subtitle="% ostatniego wynagrodzenia"
-              icon={<Assessment />}
-              color={zusColors.secondary}
-              isPercentage
-              loading={state.uiState.isCalculating}
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <ResultCard
-              title="Vs średnia emerytura"
-              value={state.results.vsAverageInRetirementYearPct || 12.3}
-              subtitle="punkty proc. różnicy"
-              icon={<Timeline />}
-              color={state.results.vsAverageInRetirementYearPct > 0 ? zusColors.success : zusColors.error}
-              isPercentage
-              showSign
-              loading={state.uiState.isCalculating}
-            />
-          </Grid>
-        </Grid>
-      </Box>
-
-      {/* Visualizations Section */}
-      <Box sx={{ mb: 4 }}>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-            mb: 4,
-            p: 2,
-            borderRadius: 2,
-            background: `linear-gradient(90deg, ${zusColors.info}10 0%, ${zusColors.primary}10 50%, ${zusColors.secondary}10 100%)`,
-            border: `1px solid ${zusColors.info}30`,
-          }}
-        >
-          <Box
-            sx={{
-              p: 1.5,
-              borderRadius: '50%',
-              background: `linear-gradient(135deg, ${zusColors.info} 0%, ${zusColors.primary} 100%)`,
-              boxShadow: `0 6px 20px ${zusColors.info}40`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Timeline sx={{ color: 'white', fontSize: 28 }} />
-          </Box>
-          <Typography
-            variant="h5"
-            sx={{
-              fontWeight: 700,
-              background: `linear-gradient(135deg, ${zusColors.info} 0%, ${zusColors.primary} 100%)`,
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            Wizualizacje
-          </Typography>
-        </Box>
-
-        {/* ZUS Account Growth Chart - Full Width */}
-        <Box sx={{ mb: 4 }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 4,
-              height: 520,
-              minWidth: '100%',
-              width: '100%',
-              borderRadius: 3,
-              background: `linear-gradient(135deg, ${zusColors.primary}05 0%, white 50%, ${zusColors.info}05 100%)`,
-              border: `1px solid ${zusColors.primary}20`,
-              boxShadow: `0 8px 32px ${zusColors.primary}15`,
-              transition: 'all 0.3s ease-in-out',
-              '&:hover': {
-                boxShadow: `0 12px 40px ${zusColors.primary}25`,
-                transform: 'translateY(-2px)',
-              },
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-              <Box
+            {/* Results Summary Section – 2 kolumny, równe karty */}
+            <Box
                 sx={{
-                  p: 1,
-                  borderRadius: 2,
-                  background: `linear-gradient(135deg, ${zusColors.primary} 0%, ${zusColors.success} 100%)`,
-                  boxShadow: `0 4px 12px ${zusColors.primary}30`,
+                    mb: 4,
+                    p: { xs: 2.5, sm: 3 },
+                    borderRadius: 4,
+                    backdropFilter: 'blur(6px)',
+                    background: `linear-gradient(135deg, ${zusColors.primary}0A 0%, ${zusColors.info}08 100%)`,
+                    border: `1px solid ${zusColors.primary}26`,
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.06)',
                 }}
-              >
-                <AccountBalance sx={{ color: 'white', fontSize: 24 }} />
-              </Box>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 600,
-                  color: zusColors.dark,
-                }}
-              >
-                Wzrost środków na koncie ZUS
-              </Typography>
+                aria-label="Podsumowanie wyników"
+            >
+                {/* Header */}
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 2,
+                        mb: 3,
+                        flexWrap: 'wrap',
+                    }}
+                >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Box
+                            sx={{
+                                p: 1.25,
+                                borderRadius: 2,
+                                background: `linear-gradient(135deg, ${zusColors.primary} 0%, ${zusColors.info} 100%)`,
+                                boxShadow: `0 6px 20px ${zusColors.primary}30`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                            }}
+                        >
+                            <Assessment sx={{ color: 'white', fontSize: 26 }} />
+                        </Box>
+                        <Typography
+                            variant="h5"
+                            sx={{
+                                fontWeight: 800,
+                                letterSpacing: 0.2,
+                                background: `linear-gradient(135deg, ${zusColors.primary} 0%, ${zusColors.dark} 100%)`,
+                                backgroundClip: 'text',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                            }}
+                        >
+                            Podsumowanie wyników
+                        </Typography>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Tooltip
+                            title="Metryki bazują na aktualnych parametrach z panelu. Wartości mogą się zmieniać po korektach."
+                            arrow
+                        >
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    px: 1.25,
+                                    py: 0.75,
+                                    borderRadius: 2,
+                                    border: `1px solid ${zusColors.info}33`,
+                                    backgroundColor: `${zusColors.info}10`,
+                                    color: zusColors.dark,
+                                    fontWeight: 600,
+                                    whiteSpace: 'nowrap',
+                                }}
+                            >
+                                Ostatnia aktualizacja: {state.uiState.isCalculating ? 'trwa…' : 'przed chwilą'}
+                            </Typography>
+                        </Tooltip>
+                    </Box>
+                </Box>
+
+                {/* Metrics grid – dokładnie 2 kolumny od md wzwyż, 1 kolumna na mobile */}
+                <Box
+                    sx={{
+                        display: 'grid',
+                        gap: 2.5,
+                        gridTemplateColumns: {
+                            xs: '1fr',
+                            md: '1fr 1fr',
+                        },
+                    }}
+                >
+                    <MetricCard
+                        title="Emerytura rzeczywista"
+                        value={state.results.realAmountDeflated ?? 2950}
+                        subtitle="w dzisiejszych cenach"
+                        icon={<AccountBalance />}
+                        color={zusColors.info}
+                        loading={state.uiState.isCalculating}
+                        valueFormatter={formatCurrency}
+                        trend={state.results?.realAmountDeflatedDeltaPct}
+                    />
+
+                    <MetricCard
+                        title="Emerytura nominalna"
+                        value={state.results.actualAmountPLN ?? 3850}
+                        subtitle="w przyszłych cenach"
+                        icon={<TrendingUp />}
+                        color={zusColors.primary}
+                        loading={state.uiState.isCalculating}
+                        valueFormatter={formatCurrency}
+                        trend={state.results?.nominalDeltaPct}
+                    />
+
+                    <MetricCard
+                        title="Stopa zastąpienia"
+                        value={state.results.replacementRatePct ?? 68.5}
+                        subtitle="% ostatniego wynagrodzenia"
+                        icon={<Assessment />}
+                        color={zusColors.secondary}
+                        loading={state.uiState.isCalculating}
+                        isPercentage
+                        trend={state.results?.replacementDeltaPct}
+                    />
+
+                    <MetricCard
+                        title="Vs średnia emerytura"
+                        value={state.results.vsAverageInRetirementYearPct ?? 12.3}
+                        subtitle="p.p. różnicy względem średniej"
+                        icon={<Timeline />}
+                        color={
+                            (state.results.vsAverageInRetirementYearPct ?? 0) >= 0
+                                ? zusColors.success
+                                : zusColors.error
+                        }
+                        loading={state.uiState.isCalculating}
+                        isPercentage
+                        showSign
+                        trend={state.results?.vsAverageDeltaPct}
+                    />
+                </Box>
             </Box>
-            <Box sx={{ width: '100%', minWidth: 800 }}>
-              <ZUSAccountGrowthChart
-                data={state.results.accountGrowthProjection}
-                loading={state.uiState.isCalculating}
-              />
+
+            {/* Visualizations Section */}
+            <Box sx={{ mb: 4 }}>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2,
+                        mb: 4,
+                        p: 2,
+                        borderRadius: 2,
+                        background: `linear-gradient(90deg, ${zusColors.info}10 0%, ${zusColors.primary}10 50%, ${zusColors.secondary}10 100%)`,
+                        border: `1px solid ${zusColors.info}30`,
+                    }}
+                >
+                    <Box
+                        sx={{
+                            p: 1.5,
+                            borderRadius: '50%',
+                            background: `linear-gradient(135deg, ${zusColors.info} 0%, ${zusColors.primary} 100%)`,
+                            boxShadow: `0 6px 20px ${zusColors.info}40`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        <Timeline sx={{ color: 'white', fontSize: 28 }} />
+                    </Box>
+                    <Typography
+                        variant="h5"
+                        sx={{
+                            fontWeight: 700,
+                            background: `linear-gradient(135deg, ${zusColors.info} 0%, ${zusColors.primary} 100%)`,
+                            backgroundClip: 'text',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                        }}
+                    >
+                        Wizualizacje
+                    </Typography>
+                </Box>
+
+                {/* ZUS Account Growth Chart - Full Width */}
+                <Box sx={{ mb: 4 }}>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            p: 4,
+                            height: 520,
+                            minWidth: '100%',
+                            width: '100%',
+                            borderRadius: 3,
+                            background: `linear-gradient(135deg, ${zusColors.primary}05 0%, white 50%, ${zusColors.info}05 100%)`,
+                            border: `1px solid ${zusColors.primary}20`,
+                            boxShadow: `0 8px 32px ${zusColors.primary}15`,
+                            transition: 'all 0.3s ease-in-out',
+                            '&:hover': {
+                                boxShadow: `0 12px 40px ${zusColors.primary}25`,
+                                transform: 'translateY(-2px)',
+                            },
+                        }}
+                    >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                            <Box
+                                sx={{
+                                    p: 1,
+                                    borderRadius: 2,
+                                    background: `linear-gradient(135deg, ${zusColors.primary} 0%, ${zusColors.success} 100%)`,
+                                    boxShadow: `0 4px 12px ${zusColors.primary}30`,
+                                }}
+                            >
+                                <AccountBalance sx={{ color: 'white', fontSize: 24 }} />
+                            </Box>
+                            <Typography
+                                variant="h6"
+                                sx={{
+                                    fontWeight: 600,
+                                    color: zusColors.dark,
+                                }}
+                            >
+                                Wzrost środków na koncie ZUS
+                            </Typography>
+                        </Box>
+                        <Box sx={{ width: '100%', minWidth: 800 }}>
+                            <ZUSAccountGrowthChart
+                                data={state.results.accountGrowthProjection}
+                                loading={state.uiState.isCalculating}
+                            />
+                        </Box>
+                    </Paper>
+                </Box>
+
+                {/* Salary Projection Chart - Full Width */}
+                <Box sx={{ mb: 4 }}>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            p: 4,
+                            height: 520,
+                            minWidth: '100%',
+                            width: '100%',
+                            borderRadius: 3,
+                            background: `linear-gradient(135deg, ${zusColors.info}05 0%, white 50%, ${zusColors.secondary}05 100%)`,
+                            border: `1px solid ${zusColors.info}20`,
+                            boxShadow: `0 8px 32px ${zusColors.info}15`,
+                            transition: 'all 0.3s ease-in-out',
+                            '&:hover': {
+                                boxShadow: `0 12px 40px ${zusColors.info}25`,
+                                transform: 'translateY(-2px)',
+                            },
+                        }}
+                    >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                            <Box
+                                sx={{
+                                    p: 1,
+                                    borderRadius: 2,
+                                    background: `linear-gradient(135deg, ${zusColors.info} 0%, ${zusColors.secondary} 100%)`,
+                                    boxShadow: `0 4px 12px ${zusColors.info}30`,
+                                }}
+                            >
+                                <Timeline sx={{ color: 'white', fontSize: 24 }} />
+                            </Box>
+                            <Typography
+                                variant="h6"
+                                sx={{
+                                    fontWeight: 600,
+                                    color: zusColors.dark,
+                                }}
+                            >
+                                Projekcja wynagrodzeń
+                            </Typography>
+                        </Box>
+                        <Box sx={{ width: '100%', minWidth: 800 }}>
+                            <SalaryProjectionChart
+                                data={state.results.salaryProjection}
+                                loading={state.uiState.isCalculating}
+                            />
+                        </Box>
+                    </Paper>
+                </Box>
             </Box>
-          </Paper>
         </Box>
-
-        {/* Salary Projection Chart - Full Width */}
-        <Box sx={{ mb: 4 }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 4,
-              height: 520,
-              minWidth: '100%',
-              width: '100%',
-              borderRadius: 3,
-              background: `linear-gradient(135deg, ${zusColors.info}05 0%, white 50%, ${zusColors.secondary}05 100%)`,
-              border: `1px solid ${zusColors.info}20`,
-              boxShadow: `0 8px 32px ${zusColors.info}15`,
-              transition: 'all 0.3s ease-in-out',
-              '&:hover': {
-                boxShadow: `0 12px 40px ${zusColors.info}25`,
-                transform: 'translateY(-2px)',
-              },
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-              <Box
-                sx={{
-                  p: 1,
-                  borderRadius: 2,
-                  background: `linear-gradient(135deg, ${zusColors.info} 0%, ${zusColors.secondary} 100%)`,
-                  boxShadow: `0 4px 12px ${zusColors.info}30`,
-                }}
-              >
-                <Timeline sx={{ color: 'white', fontSize: 24 }} />
-              </Box>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 600,
-                  color: zusColors.dark,
-                }}
-              >
-                Projekcja wynagrodzeń
-              </Typography>
-            </Box>
-            <Box sx={{ width: '100%', minWidth: 800 }}>
-              <SalaryProjectionChart
-                data={state.results.salaryProjection}
-                loading={state.uiState.isCalculating}
-              />
-            </Box>
-          </Paper>
-        </Box>
-
-
-      </Box>
-    </Box>
-  );
+    );
 };
 
 /**
- * Result Card Component
- * Displays key metrics with icons and formatting
+ * TrendChip – mały chip kierunku zmiany (opcjonalny)
  */
-const ResultCard = ({
-  title,
-  value,
-  subtitle,
-  icon,
-  color,
-  isPercentage = false,
-  showSign = false,
-  loading = false
-}) => {
-  const formatValue = (val) => {
-    if (loading) return '';
-    if (isPercentage) {
-      const sign = showSign && val > 0 ? '+' : '';
-      return `${sign}${val.toFixed(1)}%`;
-    }
-    return formatCurrency(val);
-  };
-
-  return (
-    <Card
-      elevation={0}
-      sx={{
-        height: '100%',
-        borderRadius: 3,
-        background: `linear-gradient(135deg, ${color}08 0%, white 70%, ${color}05 100%)`,
-        border: `1px solid ${color}20`,
-        boxShadow: `0 4px 20px ${color}15`,
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        '&:hover': {
-          transform: 'translateY(-4px) scale(1.02)',
-          boxShadow: `0 8px 32px ${color}25`,
-          border: `1px solid ${color}40`,
-        },
-      }}
-    >
-      <CardContent sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <Box
+const TrendChip = ({ trend }) => {
+    if (trend == null || Number.isNaN(trend)) return null;
+    const up = trend > 0;
+    const label = `${up ? '▲' : '▼'} ${Math.abs(trend).toFixed(1)}%`;
+    return (
+        <Box
+            component="span"
             sx={{
-              p: 1.5,
-              borderRadius: 2,
-              background: `linear-gradient(135deg, ${color} 0%, ${color}CC 100%)`,
-              color: 'white',
-              mr: 2,
-              boxShadow: `0 4px 12px ${color}30`,
-              transition: 'all 0.3s ease-in-out',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minWidth: 48,
-              minHeight: 48,
+                ml: 1,
+                px: 1,
+                py: 0.25,
+                borderRadius: 1.5,
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: 0.2,
+                color: up ? '#0f5132' : '#842029',
+                backgroundColor: up ? '#d1e7dd' : '#f8d7da',
+                border: `1px solid ${up ? '#badbcc' : '#f5c2c7'}`,
+                lineHeight: 1.2,
             }}
-          >
-            {icon || <Assessment />}
-          </Box>
-          <Typography
-            variant="body2"
-            sx={{
-              fontWeight: 600,
-              color: zusColors.dark,
-              opacity: 0.8,
-            }}
-          >
-            {title}
-          </Typography>
+            aria-label={`Zmiana ${up ? 'w górę' : 'w dół'} o ${Math.abs(trend).toFixed(1)}%`}
+        >
+            {label}
         </Box>
+    );
+};
 
-        {loading ? (
-          <Box>
-            <Skeleton variant="text" width="80%" height={48} sx={{ mb: 1 }} />
-            <Skeleton variant="text" width="60%" height={20} />
-          </Box>
-        ) : (
-          <>
-            <Typography
-              variant="h4"
-              sx={{
-                fontWeight: 800,
-                background: `linear-gradient(135deg, ${color} 0%, ${zusColors.dark} 100%)`,
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                mb: 1,
-                fontSize: { xs: '1.75rem', sm: '2rem', md: '2.25rem' },
-              }}
-            >
-              {formatValue(value)}
-            </Typography>
+/**
+ * MetricCard – równa wysokość + pełne rozciągnięcie
+ */
+const MetricCard = ({
+                        title,
+                        value,
+                        subtitle,
+                        icon,
+                        color,
+                        loading = false,
+                        isPercentage = false,
+                        showSign = false,
+                        valueFormatter,
+                        trend, // % zmiany vs poprzedni wynik (opcjonalnie)
+                    }) => {
+    const formatVal = (v) => {
+        if (loading) return '';
+        if (isPercentage) {
+            const sign = showSign && v > 0 ? '+' : '';
+            const num = Number(v) || 0;
+            return `${sign}${num.toFixed(1)}%`;
+        }
+        return valueFormatter ? valueFormatter(v) : String(v);
+    };
 
-            <Typography
-              variant="caption"
-              sx={{
-                color: zusColors.dark,
-                opacity: 0.7,
-                fontWeight: 500,
-              }}
-            >
-              {subtitle}
-            </Typography>
-          </>
-        )}
-      </CardContent>
-    </Card>
-  );
+    return (
+        <Card
+            elevation={0}
+            sx={{
+                minHeight: CARD_MIN_HEIGHT,
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                borderRadius: 3,
+                background: `linear-gradient(180deg, ${color}10 0%, #fff 55%)`,
+                border: `1px solid ${color}24`,
+                boxShadow: `0 8px 28px ${color}1f`,
+                transition: 'transform .25s ease, box-shadow .25s ease',
+                '&:hover': {
+                    transform: 'translateY(-3px)',
+                    boxShadow: `0 14px 36px ${color}33`,
+                },
+            }}
+        >
+            <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Box
+                        sx={{
+                            mr: 1.5,
+                            width: 44,
+                            height: 44,
+                            borderRadius: '50%',
+                            display: 'grid',
+                            placeItems: 'center',
+                            background: `linear-gradient(135deg, ${color}, ${zusColors.dark})`,
+                            boxShadow: `0 6px 16px ${color}40`,
+                            color: '#fff',
+                            flex: '0 0 44px',
+                        }}
+                    >
+                        {icon || <Assessment />}
+                    </Box>
+                    <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 700, letterSpacing: 0.2, color: zusColors.dark, opacity: 0.9 }}
+                    >
+                        {title}
+                    </Typography>
+                    {!loading && <TrendChip trend={trend} />}
+                </Box>
+
+                <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    {loading ? (
+                        <>
+                            <Skeleton variant="text" width="70%" height={42} sx={{ mb: 1 }} />
+                            <Skeleton variant="text" width="40%" height={18} />
+                        </>
+                    ) : (
+                        <>
+                            <Typography
+                                variant="h4"
+                                sx={{
+                                    fontWeight: 900,
+                                    lineHeight: 1.15,
+                                    background: `linear-gradient(135deg, ${color} 0%, ${zusColors.dark} 100%)`,
+                                    backgroundClip: 'text',
+                                    WebkitBackgroundClip: 'text',
+                                    WebkitTextFillColor: 'transparent',
+                                    mb: 0.5,
+                                    fontSize: { xs: '1.75rem', sm: '2rem' },
+                                }}
+                            >
+                                {formatVal(value)}
+                            </Typography>
+                            <Typography
+                                variant="caption"
+                                sx={{ color: zusColors.dark, opacity: 0.7, fontWeight: 600 }}
+                            >
+                                {subtitle}
+                            </Typography>
+                        </>
+                    )}
+                </Box>
+            </CardContent>
+        </Card>
+    );
 };
 
 export default DashboardMainContent;
