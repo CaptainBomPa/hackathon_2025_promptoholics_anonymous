@@ -1,372 +1,279 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import {
-  Box,
-  Typography,
-  FormControl,
-  FormLabel,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
-  TextField,
-  Card,
-  CardContent,
-  Chip,
-  Alert,
+    Box,
+    Typography,
+    Paper,
+    Divider,
+    TextField,
+    InputAdornment,
+    FormHelperText,
+    Tooltip,
+    tooltipClasses,
+    IconButton,
 } from '@mui/material';
+import { styled } from '@mui/material/styles';
+import { ToggleButton, ToggleButtonGroup } from '@mui/material';
 import {
-  LocalHospital as SickLeaveIcon,
-  TrendingUp as TrendingUpIcon,
-  Block as BlockIcon,
-  Edit as EditIcon,
-  Info as InfoIcon,
+    TrendingUp as TrendingUpIcon,
+    Block as BlockIcon,
+    Edit as EditIcon,
+    Info as InfoIcon,
 } from '@mui/icons-material';
 import { useDashboard } from '../../../contexts/DashboardContext';
-import { zusColors } from '../../../constants/zus-colors';
 
-/**
- * Sick Leave Panel Component
- * Manages sick leave calculation options with three modes
- */
+/** Subtelny tooltip */
+const FancyTooltip = styled(({ className, ...props }) => (
+    <Tooltip arrow placement="top" enterDelay={200} leaveDelay={100} {...props} classes={{ popper: className }} />
+))(({ theme }) => ({
+    [`& .${tooltipClasses.tooltip}`]: {
+        background:
+            theme.palette.mode === 'light'
+                ? 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,248,250,0.98) 100%)'
+                : 'linear-gradient(180deg, rgba(42,42,42,0.98) 0%, rgba(28,28,28,0.98) 100%)',
+        color: theme.palette.text.primary,
+        border: `1px solid ${theme.palette.divider}`,
+        boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+        borderRadius: 8,
+        padding: '10px 12px',
+        backdropFilter: 'blur(4px)',
+    },
+    [`& .${tooltipClasses.arrow}`]: {
+        color:
+            theme.palette.mode === 'light'
+                ? 'rgba(255,255,255,0.98)'
+                : 'rgba(42,42,42,0.98)',
+    },
+}));
+
+/** Przyciski trybu – kanciaste, bez pigułek */
+const ModeButton = styled(ToggleButton)(({ theme }) => ({
+    textTransform: 'none',
+    padding: '10px 12px',
+    borderRadius: 8,
+    border: `1px solid ${theme.palette.divider}`,
+    background: theme.palette.mode === 'light'
+        ? 'linear-gradient(180deg, #ffffff 0%, #fafafa 100%)'
+        : 'linear-gradient(180deg, #2a2a2a 0%, #222 100%)',
+    transition: 'all .16s ease',
+    display: 'grid',
+    gridTemplateColumns: '22px auto',
+    gap: 8,
+    alignItems: 'center',
+    '& .modeTitle': { fontWeight: 600, fontSize: 14 },
+    '& .modeSub': { fontSize: 12, opacity: 0.7, lineHeight: 1.2 },
+    '&:hover': {
+        transform: 'translateY(-1px)',
+        boxShadow: '0 6px 18px rgba(0,0,0,0.08)',
+    },
+    '&.Mui-selected': {
+        borderColor: theme.palette.primary.main,
+        boxShadow: '0 8px 22px rgba(25,118,210,0.14)',
+        background: `linear-gradient(180deg, ${theme.palette.primary.light}10 0%, transparent 100%)`,
+    },
+}));
+
 const SickLeavePanel = () => {
-  const { state, actions } = useDashboard();
-  const { sickLeave } = state.parameters;
-  
-  const [sickLeaveMode, setSickLeaveMode] = useState(sickLeave?.mode || 'averaged');
-  const [customDays, setCustomDays] = useState(sickLeave?.customDays || '');
+    const { state, actions } = useDashboard();
+    const initial = state?.parameters?.sickLeave || {};
+    const [sickLeaveMode, setSickLeaveMode] = useState(initial.mode || 'averaged');
+    const [customDays, setCustomDays] = useState(
+        typeof initial.customDays === 'number' ? String(initial.customDays) : ''
+    );
+    const [error, setError] = useState('');
 
-  const handleModeChange = (event) => {
-    const newMode = event.target.value;
-    setSickLeaveMode(newMode);
-    
-    // Update context
-    actions.setSickLeaveMode(newMode);
-    
-    // Clear custom days when switching away from custom mode
-    if (newMode !== 'custom') {
-      setCustomDays('');
-    }
-  };
+    useEffect(() => {
+        if (!initial.mode) actions.setSickLeaveMode('averaged');
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
-  const handleCustomDaysChange = (event) => {
-    const value = event.target.value;
-    // Allow only numbers and limit to reasonable range
-    if (value === '' || (/^\d+$/.test(value) && parseInt(value) <= 365)) {
-      setCustomDays(value);
-      
-      // Update context with custom days
-      actions.updateSickLeaveParameters({
-        mode: 'custom',
-        customDays: parseInt(value) || 0,
-      });
-    }
-  };
+    const handleModeChange = useCallback((_e, newMode) => {
+        if (!newMode) return;
+        setSickLeaveMode(newMode);
+        actions.setSickLeaveMode(newMode);
+        if (newMode !== 'custom') {
+            setCustomDays('');
+            setError('');
+            actions.updateSickLeaveParameters({ mode: newMode, customDays: 0 });
+        }
+    }, [actions]);
 
-  const getModeIcon = (mode) => {
-    switch (mode) {
-      case 'averaged':
-        return <TrendingUpIcon sx={{ fontSize: 18 }} />;
-      case 'none':
-        return <BlockIcon sx={{ fontSize: 18 }} />;
-      case 'custom':
-        return <EditIcon sx={{ fontSize: 18 }} />;
-      default:
-        return <SickLeaveIcon sx={{ fontSize: 18 }} />;
-    }
-  };
+    const handleCustomDaysChange = useCallback((e) => {
+        const val = e.target.value.trim();
+        if (val === '') {
+            setCustomDays('');
+            setError('');
+            actions.updateSickLeaveParameters({ mode: 'custom', customDays: 0 });
+            return;
+        }
+        if (!/^\d+$/.test(val)) {
+            setError('Podaj liczbę całkowitą 0–365.');
+            setCustomDays(val);
+            return;
+        }
+        const n = parseInt(val, 10);
+        if (n < 0 || n > 365) {
+            setError('Zakres dozwolony: 0–365 dni.');
+        } else {
+            setError('');
+            actions.updateSickLeaveParameters({ mode: 'custom', customDays: n });
+        }
+        setCustomDays(val);
+    }, [actions]);
 
-
-
-  const getEstimatedImpact = () => {
-    if (sickLeaveMode === 'none') {
-      return { text: 'Brak wpływu na emeryturę', color: zusColors.success, emoji: '✅' };
-    } else if (sickLeaveMode === 'averaged') {
-      return { text: 'Średnie obniżenie emerytury o ~2-4%', color: zusColors.info, emoji: '📊' };
-    } else if (sickLeaveMode === 'custom' && customDays) {
-      const days = parseInt(customDays);
-      if (days === 0) {
-        return { text: 'Brak wpływu na emeryturę', color: zusColors.success, emoji: '✅' };
-      } else if (days <= 10) {
-        return { text: 'Minimalne obniżenie emerytury o ~1-2%', color: zusColors.success, emoji: '🟢' };
-      } else if (days <= 30) {
-        return { text: 'Umiarkowane obniżenie emerytury o ~3-5%', color: zusColors.secondary, emoji: '🟡' };
-      } else {
-        return { text: 'Znaczące obniżenie emerytury o ~5-8%', color: zusColors.error, emoji: '🔴' };
-      }
-    }
-    return { text: 'Wybierz opcję aby zobaczyć wpływ', color: zusColors.neutral, emoji: '❓' };
-  };
-
-  const impact = getEstimatedImpact();
-
-  return (
-    <Box sx={{ p: 3 }}>
-
-      {/* Info Alert */}
-      <Alert 
-        severity="info" 
-        icon={<InfoIcon />}
-        sx={{ 
-          mb: 3,
-          borderRadius: 2,
-          background: `linear-gradient(135deg, ${zusColors.info}08 0%, white 100%)`,
-          border: `1px solid ${zusColors.info}20`,
-        }}
-      >
-        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-          🏥 Zwolnienia chorobowe wpływają na wysokość emerytury poprzez zmniejszenie składek ZUS. 
-          Wybierz sposób uwzględnienia w kalkulacjach.
-        </Typography>
-      </Alert>
-
-      {/* Mode Selection */}
-      <Card
-        sx={{
-          mb: 3,
-          borderRadius: 3,
-          background: `linear-gradient(135deg, ${zusColors.error}05 0%, white 100%)`,
-          border: `1px solid ${zusColors.error}15`,
-          boxShadow: `0 4px 16px ${zusColors.error}10`,
-        }}
-      >
-        <CardContent sx={{ p: 3 }}>
-          <FormControl component="fieldset" fullWidth>
-            <FormLabel 
-              component="legend" 
-              sx={{ 
-                fontWeight: 700, 
-                color: zusColors.dark,
-                mb: 2,
-                fontSize: '1.1rem',
-              }}
+    return (
+        <Box sx={{ display: 'grid', gap: 2.5 }}>
+            {/* Sekcja wyboru – info dymek wpięty w nagłówek */}
+            <Paper
+                variant="outlined"
+                sx={(theme) => ({
+                    p: 2,
+                    border: '0px',
+                    background:
+                        theme.palette.mode === 'light'
+                            ? 'linear-gradient(180deg, #fff 0%, #fbfbfc 100%)'
+                            : 'linear-gradient(180deg, #222 0%, #1b1b1b 100%)',
+                })}
             >
-              📋 Sposób uwzględnienia zwolnień chorobowych:
-            </FormLabel>
-            
-            <RadioGroup
-              value={sickLeaveMode}
-              onChange={handleModeChange}
-              sx={{ gap: 0 }}
-            >
-              {/* Averaged Option */}
-              <FormControlLabel
-                value="averaged"
-                control={
-                  <Radio 
-                    sx={{ 
-                      color: zusColors.info,
-                      '&.Mui-checked': { color: zusColors.info }
-                    }} 
-                  />
-                }
-                label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1 }}>
-                    <Chip
-                      icon={getModeIcon('averaged')}
-                      label="Średnia"
-                      size="small"
-                      sx={{
-                        background: sickLeaveMode === 'averaged' 
-                          ? `linear-gradient(135deg, ${zusColors.info} 0%, ${zusColors.primary} 100%)`
-                          : `linear-gradient(135deg, ${zusColors.info}20 0%, ${zusColors.primary}15 100%)`,
-                        color: sickLeaveMode === 'averaged' ? 'white' : zusColors.info,
-                        fontWeight: 600,
-                        minWidth: 160,
-                      }}
-                    />
-                    <Typography variant="body2" sx={{ color: zusColors.dark, opacity: 0.8 }}>
-                      📊 Użyj statystycznej średniej dni chorobowych dla Twojego wieku
-                    </Typography>
-                  </Box>
-                }
-                sx={{
-                  m: 0,
-                  p: 1,
-                  borderRadius: 2,
-                  border: `2px solid ${sickLeaveMode === 'averaged' ? zusColors.info + '40' : 'transparent'}`,
-                  background: sickLeaveMode === 'averaged' 
-                    ? `linear-gradient(135deg, ${zusColors.info}08 0%, ${zusColors.primary}05 100%)`
-                    : 'transparent',
-                  transition: 'all 0.3s ease-in-out',
-                  '&:hover': {
-                    background: `linear-gradient(135deg, ${zusColors.info}05 0%, ${zusColors.primary}03 100%)`,
-                  }
-                }}
-              />
-
-              {/* None Option */}
-              <FormControlLabel
-                value="none"
-                control={
-                  <Radio 
-                    sx={{ 
-                      color: zusColors.neutral,
-                      '&.Mui-checked': { color: zusColors.neutral }
-                    }} 
-                  />
-                }
-                label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1 }}>
-                    <Chip
-                      icon={getModeIcon('none')}
-                      label="Nie uwzględniać"
-                      size="small"
-                      sx={{
-                        background: sickLeaveMode === 'none' 
-                          ? `linear-gradient(135deg, ${zusColors.neutral} 0%, ${zusColors.dark} 100%)`
-                          : `linear-gradient(135deg, ${zusColors.neutral}20 0%, ${zusColors.dark}15 100%)`,
-                        color: sickLeaveMode === 'none' ? 'white' : zusColors.neutral,
-                        fontWeight: 600,
-                        minWidth: 160,
-                      }}
-                    />
-                    <Typography variant="body2" sx={{ color: zusColors.dark, opacity: 0.8 }}>
-                      🚫 Pomiń zwolnienia chorobowe w kalkulacjach
-                    </Typography>
-                  </Box>
-                }
-                sx={{
-                  m: 0,
-                  p: 1,
-                  borderRadius: 2,
-                  border: `2px solid ${sickLeaveMode === 'none' ? zusColors.neutral + '40' : 'transparent'}`,
-                  background: sickLeaveMode === 'none' 
-                    ? `linear-gradient(135deg, ${zusColors.neutral}08 0%, ${zusColors.dark}05 100%)`
-                    : 'transparent',
-                  transition: 'all 0.3s ease-in-out',
-                  '&:hover': {
-                    background: `linear-gradient(135deg, ${zusColors.neutral}05 0%, ${zusColors.dark}03 100%)`,
-                  }
-                }}
-              />
-
-              {/* Custom Option */}
-              <FormControlLabel
-                value="custom"
-                control={
-                  <Radio 
-                    sx={{ 
-                      color: zusColors.secondary,
-                      '&.Mui-checked': { color: zusColors.secondary }
-                    }} 
-                  />
-                }
-                label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1, width: '100%' }}>
-                    <Chip
-                      icon={getModeIcon('custom')}
-                      label="Własne"
-                      size="small"
-                      sx={{
-                        background: sickLeaveMode === 'custom' 
-                          ? `linear-gradient(135deg, ${zusColors.secondary} 0%, ${zusColors.primary} 100%)`
-                          : `linear-gradient(135deg, ${zusColors.secondary}20 0%, ${zusColors.primary}15 100%)`,
-                        color: sickLeaveMode === 'custom' ? 'white' : zusColors.secondary,
-                        fontWeight: 600,
-                        minWidth: 160,
-                      }}
-                    />
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
-                      <Typography variant="body2" sx={{ width: '110px', color: zusColors.dark, opacity: 0.8 }}>
-                        ✏️ Własna średnia liczba dni chorobowych:
-                      </Typography>
-                      <TextField
-                        size="small"
-                        value={customDays}
-                        onChange={handleCustomDaysChange}
-                        disabled={sickLeaveMode !== 'custom'}
-                        placeholder="np. 8"
-                        sx={{
-                          width: 100,
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
-                            background: sickLeaveMode === 'custom' ? 'white' : 'transparent',
-                            '&.Mui-focused fieldset': {
-                              borderColor: zusColors.secondary,
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                            Sposób uwzględnienia
+                        </Typography>
+                        <FancyTooltip
+                            title={
+                                <Box>
+                                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Co to jest?</Typography>
+                                    <Typography variant="body2">
+                                        Zwolnienia chorobowe mogą obniżać przyszłą emeryturę przez niższe składki ZUS.
+                                        Wybierz, jak je ująć: średnia, własna wartość lub pominięcie.
+                                    </Typography>
+                                </Box>
                             }
-                          }
-                        }}
-                        InputProps={{
-                          endAdornment: (
-                            <Typography variant="caption" sx={{ color: zusColors.dark, opacity: 0.6 }}>
-                              dni
-                            </Typography>
-                          )
-                        }}
-                      />
+                        >
+                            <IconButton size="small">
+                                <InfoIcon fontSize="small" />
+                            </IconButton>
+                        </FancyTooltip>
                     </Box>
-                  </Box>
-                }
-                sx={{
-                  m: 0,
-                  p: 1,
-                  borderRadius: 2,
-                  border: `2px solid ${sickLeaveMode === 'custom' ? zusColors.secondary + '40' : 'transparent'}`,
-                  background: sickLeaveMode === 'custom' 
-                    ? `linear-gradient(135deg, ${zusColors.secondary}08 0%, ${zusColors.primary}05 100%)`
-                    : 'transparent',
-                  transition: 'all 0.3s ease-in-out',
-                  '&:hover': {
-                    background: `linear-gradient(135deg, ${zusColors.secondary}05 0%, ${zusColors.primary}03 100%)`,
-                  }
-                }}
-              />
-            </RadioGroup>
-          </FormControl>
-        </CardContent>
-      </Card>
+                </Box>
 
-      {/* Impact Summary */}
-      <Card
-        sx={{
-          borderRadius: 3,
-          background: `linear-gradient(135deg, ${impact.color}08 0%, white 100%)`,
-          border: `1px solid ${impact.color}20`,
-          boxShadow: `0 4px 16px ${impact.color}15`,
-        }}
-      >
-        <CardContent sx={{ p: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: zusColors.dark }}>
-              {impact.emoji} Szacowany wpływ na emeryturę
-            </Typography>
-          </Box>
-          
-          <Typography 
-            variant="body1" 
-            sx={{ 
-              color: impact.color, 
-              fontWeight: 600,
-              mb: 2,
-            }}
-          >
-            {impact.text}
-          </Typography>
+                <ToggleButtonGroup
+                    exclusive
+                    value={sickLeaveMode}
+                    onChange={handleModeChange}
+                    sx={{
+                        display: 'grid',
+                        gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' },
+                        gap: 1,
 
-          {sickLeaveMode === 'custom' && customDays && (
-            <Box sx={{ mt: 2, p: 2, borderRadius: 2, background: `${impact.color}10` }}>
-              <Typography variant="body2" sx={{ color: zusColors.dark, fontWeight: 500 }}>
-                📈 Twoje ustawienie: <strong>{customDays} dni chorobowych rocznie</strong>
-              </Typography>
-              <Typography variant="caption" sx={{ color: zusColors.dark, opacity: 0.7 }}>
-                Średnia krajowa wynosi około 12-15 dni rocznie
-              </Typography>
-            </Box>
-          )}
+                        // 🔧 naprawa brakującej krawędzi
+                        '& .MuiToggleButtonGroup-grouped': {
+                            margin: 0,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: '8px !important',
+                            '&.Mui-selected': {
+                                borderColor: 'primary.main',
+                            },
+                            '&:not(:first-of-type)': {
+                                borderLeft: '1px solid',
+                                borderColor: 'divider',
+                            },
+                        },
+                    }}
+                >
+                    <FancyTooltip
+                        title={
+                            <Box>
+                                <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Średnia</Typography>
+                                <Typography variant="body2">
+                                    Statystyczna średnia dla Twojej grupy (ZUS/GUS). Szacowany wpływ: ~2–4%.
+                                </Typography>
+                            </Box>
+                        }
+                    >
+                        <ModeButton value="averaged">
+                            <TrendingUpIcon fontSize="small" />
+                            <Box>
+                                <div className="modeTitle">Średnia</div>
+                                <div className="modeSub">bazuj na statystyce</div>
+                            </Box>
+                        </ModeButton>
+                    </FancyTooltip>
 
-          {sickLeaveMode === 'averaged' && (
-            <Box sx={{ mt: 2, p: 2, borderRadius: 2, background: `${impact.color}10` }}>
-              <Typography variant="body2" sx={{ color: zusColors.dark, fontWeight: 500 }}>
-                📊 Używana będzie statystyczna średnia dla Twojego wieku
-              </Typography>
-              <Typography variant="caption" sx={{ color: zusColors.dark, opacity: 0.7 }}>
-                Dane oparte na statystykach ZUS i GUS
-              </Typography>
-            </Box>
-          )}
-        </CardContent>
-      </Card>
-    </Box>
-  );
+                    <FancyTooltip
+                        title={
+                            <Box>
+                                <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Nie uwzględniać</Typography>
+                                <Typography variant="body2">Pomija zwolnienia w modelu. Wpływ: brak.</Typography>
+                            </Box>
+                        }
+                    >
+                        <ModeButton value="none">
+                            <BlockIcon fontSize="small" />
+                            <Box>
+                                <div className="modeTitle">Nie uwzględniać</div>
+                                <div className="modeSub">pomiń zwolnienia</div>
+                            </Box>
+                        </ModeButton>
+                    </FancyTooltip>
+
+                    <FancyTooltip
+                        title={
+                            <Box>
+                                <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Własne</Typography>
+                                <Typography variant="body2">
+                                    Ustal własną średnią liczbę dni w roku. Przykład: średnia krajowa ~12–15 dni.
+                                </Typography>
+                            </Box>
+                        }
+                    >
+                        <ModeButton value="custom">
+                            <EditIcon fontSize="small" />
+                            <Box>
+                                <div className="modeTitle">Własne</div>
+                                <div className="modeSub">podaj swoją wartość</div>
+                            </Box>
+                        </ModeButton>
+                    </FancyTooltip>
+                </ToggleButtonGroup>
+
+                {sickLeaveMode === 'custom' && (
+                    <>
+                        <Divider sx={{ my: 1.5 }} />
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <TextField
+                                size="small"
+                                type="number"
+                                inputProps={{ min: 0, max: 365 }}
+                                value={customDays}
+                                onChange={handleCustomDaysChange}
+                                placeholder="np. 8"
+                                sx={{ width: 180 }}
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            {/* Ikona opcjonalna — jeśli chcesz, odkomentuj i dodaj import:
+                      <LocalHospitalIcon fontSize="small" /> */}
+                                        </InputAdornment>
+                                    ),
+                                    endAdornment: <InputAdornment position="end">dni/rok</InputAdornment>,
+                                }}
+                            />
+                            <FancyTooltip title="Wskazówka: średnia krajowa to ok. 12–15 dni rocznie. Użyj 0, jeśli chcesz przyjąć brak zwolnień.">
+                                <IconButton size="small">
+                                    <InfoIcon fontSize="small" />
+                                </IconButton>
+                            </FancyTooltip>
+                        </Box>
+                        <FormHelperText error={Boolean(error)}>
+                            {error || 'Podaj liczbę z zakresu 0–365.'}
+                        </FormHelperText>
+                    </>
+                )}
+            </Paper>
+        </Box>
+    );
 };
 
 export default SickLeavePanel;
