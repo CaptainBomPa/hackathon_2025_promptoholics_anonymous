@@ -318,8 +318,25 @@ export const DashboardProvider = ({ children, initialData = {} }) => {
         const result = await calculatePension(state.parameters);
         
         if (result.success) {
+          // Transform backend data to match frontend expectations
+          const transformedData = {
+            ...result.data,
+            // Transform salary projection data
+            salaryProjection: result.data.salaryProjection?.map(item => ({
+              year: item.year,
+              amount: item.salary || item.amount, // Backend uses 'salary', frontend expects 'amount'
+              realAmount: item.realSalary || item.realAmount,
+              isProjected: item.year > new Date().getFullYear(),
+              isCustom: false, // Backend doesn't provide this info yet
+            })) || [],
+            // For now, generate mock account growth if backend doesn't provide it
+            accountGrowthProjection: result.data.accountGrowthProjection?.length > 0 
+              ? result.data.accountGrowthProjection 
+              : generateMockAccountGrowth(result.data.salaryProjection, state.parameters.zusAccount)
+          };
+          
           dispatch({ type: DASHBOARD_ACTIONS.CLEAR_ERROR, payload: 'calculation' });
-          dispatch({ type: DASHBOARD_ACTIONS.SET_CALCULATION_RESULTS, payload: result.data });
+          dispatch({ type: DASHBOARD_ACTIONS.SET_CALCULATION_RESULTS, payload: transformedData });
           lastCalculationRef.current = currentParams;
           
           console.log('✅ Pension calculation completed:', {
@@ -352,6 +369,33 @@ export const DashboardProvider = ({ children, initialData = {} }) => {
       }
     };
   }, [state.parameters]);
+
+  // Helper function to generate mock account growth when backend doesn't provide it
+  const generateMockAccountGrowth = (salaryProjection, zusAccount) => {
+    if (!salaryProjection || salaryProjection.length === 0) return [];
+    
+    const growth = [];
+    let currentBalance = zusAccount?.accountBalance || zusAccount?.currentBalance || 85000;
+    const contributionRate = 0.1976; // 19.76% to pension account
+    
+    salaryProjection.forEach(salaryEntry => {
+      const annualSalary = (salaryEntry.salary || salaryEntry.amount) * 12;
+      const annualContribution = annualSalary * contributionRate;
+      
+      currentBalance += annualContribution;
+      currentBalance *= 1.03; // 3% annual growth
+      
+      growth.push({
+        year: salaryEntry.year,
+        balance: Math.round(currentBalance),
+        annualContribution: Math.round(annualContribution),
+        voluntaryContribution: 0,
+        totalContribution: Math.round(annualContribution),
+      });
+    });
+    
+    return growth;
+  };
 
   // Cleanup on unmount
   useEffect(() => {
