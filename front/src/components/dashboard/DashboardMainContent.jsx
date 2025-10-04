@@ -22,6 +22,7 @@ import { formatCurrency } from '../../utils/pension-formatting';
 import { ZUSAccountGrowthChart, SalaryProjectionChart } from './charts';
 
 const CARD_MIN_HEIGHT = 180; // jedna wysokość dla wszystkich kart
+const CARD_MAX_WIDTH = 320;
 
 /**
  * Dashboard Main Content Component
@@ -395,6 +396,7 @@ const MetricCard = ({
             elevation={0}
             sx={{
                 minHeight: CARD_MIN_HEIGHT,
+                maxWidth: CARD_MAX_WIDTH,
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
