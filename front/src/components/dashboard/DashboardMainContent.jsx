@@ -49,6 +49,7 @@ const DashboardMainContent = () => {
 
             {/* Results Summary Section */}
             <Box
+                id="report-summary" // ⬅️ sekcja do PDF
                 sx={{
                     mb: 4,
                     p: { xs: 2.5, sm: 3 },
@@ -240,6 +241,7 @@ const DashboardMainContent = () => {
                 {/* ZUS Account Growth Chart */}
                 <Box sx={{ mb: 4 }}>
                     <Paper
+                        id="report-zus-chart" // ⬅️ sekcja do PDF
                         elevation={0}
                         sx={{
                             p: { xs: 2.5, md: 4 },
@@ -283,6 +285,7 @@ const DashboardMainContent = () => {
                 {/* Salary Projection Chart */}
                 <Box sx={{ mb: 4 }}>
                     <Paper
+                        id="report-salary-chart" // ⬅️ sekcja do PDF
                         elevation={0}
                         sx={{
                             p: { xs: 2.5, md: 4 },
@@ -327,7 +330,6 @@ const DashboardMainContent = () => {
     );
 };
 
-/** TrendChip */
 const TrendChip = ({ trend }) => {
     if (trend == null || Number.isNaN(trend)) return null;
     const up = trend > 0;
