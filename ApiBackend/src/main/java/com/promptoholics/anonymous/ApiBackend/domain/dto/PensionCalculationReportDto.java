@@ -14,7 +14,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PensionCalculationDto {
+public class PensionCalculationReportDto {
 
     private UUID id;
     @NotNull
@@ -29,8 +29,8 @@ public class PensionCalculationDto {
     private Double inflationAdjustedPension;
     private String postalCode;
 
-    public static PensionCalculationDto fromEntity(PensionCalculationEntity entity) {
-        return PensionCalculationDto.builder()
+    public static PensionCalculationReportDto fromEntity(PensionCalculationEntity entity) {
+        return PensionCalculationReportDto.builder()
                 .id(entity.getId())
                 .createdAt(entity.getCreatedAt())
                 .expectedPension(entity.getExpectedPension())

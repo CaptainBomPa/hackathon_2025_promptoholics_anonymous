@@ -1,0 +1,9 @@
+### Generate Admin Report (XLS)
+POST http://localhost:8080/admin/reports
+Content-Type: application/json
+Accept: application/vnd.ms-excel
+
+{
+  "dateFrom": "2025-01-01",
+  "dateTo": "2025-10-10"
+}

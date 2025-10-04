@@ -111,9 +111,9 @@ paths:
     post:
       tags: [Administration]
       operationId: generateAdminReport
-      summary: Generate usage report (XLS/CSV)
+      summary: Generate usage report (XLS)
       description: >
-        Creates an asynchronous usage/interest report with columns:
+        Creates an synchronous usage/interest report with columns:
         Date, Time, Expected Pension, Age, Sex, Salary, Sick Leave Included,
         ZUS Funds (account/subaccount), Actual/Real Pension, Postal Code.
         Default output format: XLS.
@@ -128,10 +128,6 @@ paths:
           description: Report accepted for processing
           content:
             application/vnd.ms-excel:
-              schema:
-                type: string
-                format: binary
-            text/csv:
               schema:
                 type: string
                 format: binary
@@ -303,10 +299,6 @@ components:
         dateTo:
           type: string
           format: date
-        format:
-          type: string
-          enum: [xls, csv]
-          default: xls
 
     Error:
       type: object

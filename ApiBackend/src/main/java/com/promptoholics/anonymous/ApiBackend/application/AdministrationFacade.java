@@ -1,13 +1,22 @@
 package com.promptoholics.anonymous.ApiBackend.application;
 
-import com.promptoholics.anonymous.ApiBackend.schemas.dtos.AdminReportCreateRequestDto;
-import org.springframework.core.io.Resource;
+import com.promptoholics.anonymous.ApiBackend.services.ReportServiceXls;
+import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Component;
 
-@Component
-public class AdministrationFacade {
+import java.io.IOException;
 
-    public Resource generateAdminReport(AdminReportCreateRequestDto reportCreateRequestDto) {
-        return null;
+@Component
+@RequiredArgsConstructor
+public class AdministrationFacade {
+    private final ReportServiceXls reportServiceXls;
+
+    public ByteArrayResource generateAdminReport() {
+        try {
+            return reportServiceXls.generateReportInMemory();
+        } catch (IOException e) {
+            throw new RuntimeException("Błąd generowania raportu", e);
+        }
     }
 }
