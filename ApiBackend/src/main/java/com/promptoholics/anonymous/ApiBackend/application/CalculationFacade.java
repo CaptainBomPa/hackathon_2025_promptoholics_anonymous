@@ -1,9 +1,12 @@
 package com.promptoholics.anonymous.ApiBackend.application;
 
 import com.promptoholics.anonymous.ApiBackend.domain.PensionCalculationRepository;
-import com.promptoholics.anonymous.ApiBackend.schemas.dtos.*;
+import com.promptoholics.anonymous.ApiBackend.schemas.dtos.PensionCalculationRequestDto;
+import com.promptoholics.anonymous.ApiBackend.schemas.dtos.PensionCalculationResponseDto;
+import com.promptoholics.anonymous.ApiBackend.schemas.dtos.PostalCodeUpdateRequestDto;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -32,9 +35,7 @@ public class CalculationFacade {
         pensionCalculationRepository.saveAndFlush(calculation);
     }
 
-    public ReportJobDto generateCalculationReport(
-            String calculationId, UserReportCreateRequestDto userReportCreateRequestDto
-    ) {
+    public Resource generateCalculationReport(String calculationId) {
         return null;
     }
 }

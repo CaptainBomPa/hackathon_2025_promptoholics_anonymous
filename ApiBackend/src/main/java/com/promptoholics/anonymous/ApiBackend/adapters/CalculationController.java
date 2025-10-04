@@ -2,8 +2,11 @@ package com.promptoholics.anonymous.ApiBackend.adapters;
 
 import com.promptoholics.anonymous.ApiBackend.api.CalculationApi;
 import com.promptoholics.anonymous.ApiBackend.application.CalculationFacade;
-import com.promptoholics.anonymous.ApiBackend.schemas.dtos.*;
+import com.promptoholics.anonymous.ApiBackend.schemas.dtos.PensionCalculationRequestDto;
+import com.promptoholics.anonymous.ApiBackend.schemas.dtos.PensionCalculationResponseDto;
+import com.promptoholics.anonymous.ApiBackend.schemas.dtos.PostalCodeUpdateRequestDto;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RestController;
@@ -28,10 +31,8 @@ public class CalculationController implements CalculationApi {
     }
 
     @Override
-    public ResponseEntity<ReportJobDto> generateCalculationReport(
-            String calculationId, UserReportCreateRequestDto userReportCreateRequestDto
-    ) {
-        var response = calculationFacade.generateCalculationReport(calculationId, userReportCreateRequestDto);
+    public ResponseEntity<Resource> generateCalculationReport(String calculationId) {
+        var response = calculationFacade.generateCalculationReport(calculationId);
         return ResponseEntity.ok(response);
     }
 }

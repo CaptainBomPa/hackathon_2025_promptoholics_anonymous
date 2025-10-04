@@ -3,8 +3,8 @@ package com.promptoholics.anonymous.ApiBackend.adapters;
 import com.promptoholics.anonymous.ApiBackend.api.AdministrationApi;
 import com.promptoholics.anonymous.ApiBackend.application.AdministrationFacade;
 import com.promptoholics.anonymous.ApiBackend.schemas.dtos.AdminReportCreateRequestDto;
-import com.promptoholics.anonymous.ApiBackend.schemas.dtos.ReportJobDto;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,7 +17,7 @@ public class AdministrationController implements AdministrationApi {
     private final AdministrationFacade administrationFacade;
 
     @Override
-    public ResponseEntity<ReportJobDto> generateAdminReport(AdminReportCreateRequestDto reportCreateRequestDto) {
+    public ResponseEntity<Resource> generateAdminReport(AdminReportCreateRequestDto reportCreateRequestDto) {
         var response = administrationFacade.generateAdminReport(reportCreateRequestDto);
         return ResponseEntity.ok(response);
     }
