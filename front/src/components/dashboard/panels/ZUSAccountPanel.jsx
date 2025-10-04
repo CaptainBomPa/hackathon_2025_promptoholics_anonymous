@@ -18,7 +18,7 @@ import {
   Work as WorkIcon,
   AccessTime as AccessTimeIcon,
 } from '@mui/icons-material';
-// import { useDashboard } from '../../../contexts/DashboardContext'; // TODO: Integrate with context
+import { useDashboard } from '../../../contexts/DashboardContext';
 import { zusColors } from '../../../constants/zus-colors';
 
 /**
@@ -26,23 +26,32 @@ import { zusColors } from '../../../constants/zus-colors';
  * Manages ZUS account balance and additional contributions
  */
 const ZUSAccountPanel = () => {
-  // const { state, actions } = useDashboard(); // TODO: Integrate with context
+  const { state, actions } = useDashboard();
+  const { zusAccount } = state.parameters;
 
-  const [accountBalance, setAccountBalance] = useState('25000'); // Default value from initial form
-  const [workAfterRetirement, setWorkAfterRetirement] = useState(0); // Years of work after retirement age
+  const [accountBalance, setAccountBalance] = useState(zusAccount?.accountBalance || '25000');
+  const [workAfterRetirement, setWorkAfterRetirement] = useState(zusAccount?.workAfterRetirement || 0);
 
   const handleAccountBalanceChange = (event) => {
     const value = event.target.value;
     // Allow only numbers and decimal point
     if (value === '' || /^\d*\.?\d*$/.test(value)) {
       setAccountBalance(value);
+      
+      // Update context
+      actions.updateZUSAccountParameters({
+        accountBalance: parseFloat(value) || 0,
+      });
     }
   };
 
-
-
   const handleWorkAfterRetirementChange = (event, newValue) => {
     setWorkAfterRetirement(newValue);
+    
+    // Update context
+    actions.updateZUSAccountParameters({
+      workAfterRetirement: newValue,
+    });
   };
 
   const formatCurrency = (value) => {

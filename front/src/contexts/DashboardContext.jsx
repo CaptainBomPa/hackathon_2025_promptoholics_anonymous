@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
-import { calculatePensionDebounced, validateParameters } from '../services/pensionCalculationService';
+import React, { createContext, useContext, useReducer, useCallback, useEffect, useRef } from 'react';
+import { calculatePension, validateParameters } from '../services/pensionCalculationService';
 
 /**
  * Dashboard state management context
@@ -24,7 +24,8 @@ const initialState = {
       defaultGrowthRate: 3.5,
     },
     sickLeave: {
-      mode: 'averaged', // 'averaged' | 'custom'
+      mode: 'averaged', // 'averaged' | 'custom' | 'none'
+      customDays: 0,
       historicalPeriods: [],
       projectedPeriods: [],
       averagedData: {
@@ -38,7 +39,9 @@ const initialState = {
       customRates: [],
     },
     zusAccount: {
-      currentBalance: 85000,
+      accountBalance: 85000,
+      currentBalance: 85000, // Keep for backward compatibility
+      workAfterRetirement: 0,
       voluntaryContributions: [],
     },
   },
@@ -71,9 +74,11 @@ const DASHBOARD_ACTIONS = {
   SET_BASIC_PARAMETERS: 'SET_BASIC_PARAMETERS',
   UPDATE_SALARY_TIMELINE: 'UPDATE_SALARY_TIMELINE',
   SET_SICK_LEAVE_MODE: 'SET_SICK_LEAVE_MODE',
+  UPDATE_SICK_LEAVE_PARAMETERS: 'UPDATE_SICK_LEAVE_PARAMETERS',
   ADD_SICK_LEAVE_PERIOD: 'ADD_SICK_LEAVE_PERIOD',
   REMOVE_SICK_LEAVE_PERIOD: 'REMOVE_SICK_LEAVE_PERIOD',
   UPDATE_INDEXATION: 'UPDATE_INDEXATION',
+  UPDATE_ZUS_ACCOUNT_PARAMETERS: 'UPDATE_ZUS_ACCOUNT_PARAMETERS',
   SET_CALCULATION_RESULTS: 'SET_CALCULATION_RESULTS',
   SET_CALCULATING: 'SET_CALCULATING',
   SET_ACTIVE_PANEL: 'SET_ACTIVE_PANEL',
@@ -116,6 +121,15 @@ function dashboardReducer(state, action) {
         },
       };
 
+    case DASHBOARD_ACTIONS.UPDATE_SICK_LEAVE_PARAMETERS:
+      return {
+        ...state,
+        parameters: {
+          ...state.parameters,
+          sickLeave: { ...state.parameters.sickLeave, ...action.payload },
+        },
+      };
+
     case DASHBOARD_ACTIONS.ADD_SICK_LEAVE_PERIOD:
       const { period, type } = action.payload;
       const periodsKey = type === 'historical' ? 'historicalPeriods' : 'projectedPeriods';
@@ -150,6 +164,15 @@ function dashboardReducer(state, action) {
         parameters: {
           ...state.parameters,
           indexation: { ...state.parameters.indexation, ...action.payload },
+        },
+      };
+
+    case DASHBOARD_ACTIONS.UPDATE_ZUS_ACCOUNT_PARAMETERS:
+      return {
+        ...state,
+        parameters: {
+          ...state.parameters,
+          zusAccount: { ...state.parameters.zusAccount, ...action.payload },
         },
       };
 
@@ -250,31 +273,93 @@ export const DashboardProvider = ({ children, initialData = {} }) => {
 
   const [state, dispatch] = useReducer(dashboardReducer, mergedInitialState);
 
-  // Auto-calculate when parameters change
+  // Debounce timer ref
+  const debounceTimerRef = useRef(null);
+  const lastCalculationRef = useRef(null);
+
+  // Auto-calculate when parameters change with debouncing
   useEffect(() => {
+    // Clear previous timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Basic validation
     const validation = validateParameters(state.parameters);
     
-    if (validation.isValid) {
-      dispatch({ type: DASHBOARD_ACTIONS.SET_CALCULATING, payload: true });
-      
-      calculatePensionDebounced(state.parameters, (error, results) => {
-        dispatch({ type: DASHBOARD_ACTIONS.SET_CALCULATING, payload: false });
-        
-        if (error) {
-          console.error('Calculation error:', error);
-          dispatch({ type: DASHBOARD_ACTIONS.SET_ERROR, payload: { field: 'calculation', message: error.message } });
-        } else {
-          dispatch({ type: DASHBOARD_ACTIONS.CLEAR_ERROR, payload: 'calculation' });
-          dispatch({ type: DASHBOARD_ACTIONS.SET_CALCULATION_RESULTS, payload: results });
-        }
-      });
-    } else {
-      // Set validation errors
+    if (!validation.isValid) {
+      // Set validation errors immediately
       Object.entries(validation.errors).forEach(([field, message]) => {
         dispatch({ type: DASHBOARD_ACTIONS.SET_ERROR, payload: { field, message } });
       });
+      return;
     }
+
+    // Clear validation errors
+    Object.keys(validation.errors).forEach(field => {
+      dispatch({ type: DASHBOARD_ACTIONS.CLEAR_ERROR, payload: field });
+    });
+
+    // Debounced API call
+    debounceTimerRef.current = setTimeout(async () => {
+      // Check if parameters actually changed
+      const currentParams = JSON.stringify(state.parameters);
+      if (lastCalculationRef.current === currentParams) {
+        return; // No change, skip calculation
+      }
+
+      dispatch({ type: DASHBOARD_ACTIONS.SET_CALCULATING, payload: true });
+      
+      try {
+        console.log('🧮 Recalculating pension with new parameters...');
+        
+        // Call the calculation service (which now uses real API)
+        const result = await calculatePension(state.parameters);
+        
+        if (result.success) {
+          dispatch({ type: DASHBOARD_ACTIONS.CLEAR_ERROR, payload: 'calculation' });
+          dispatch({ type: DASHBOARD_ACTIONS.SET_CALCULATION_RESULTS, payload: result.data });
+          lastCalculationRef.current = currentParams;
+          
+          console.log('✅ Pension calculation completed:', {
+            actualAmount: result.data.actualAmountPLN,
+            realAmount: result.data.realAmountDeflated,
+            duration: result.duration
+          });
+        } else {
+          console.error('❌ Calculation failed:', result.error);
+          dispatch({ type: DASHBOARD_ACTIONS.SET_ERROR, payload: { 
+            field: 'calculation', 
+            message: result.error?.userMessage || 'Błąd kalkulacji' 
+          }});
+        }
+      } catch (error) {
+        console.error('💥 Calculation error:', error);
+        dispatch({ type: DASHBOARD_ACTIONS.SET_ERROR, payload: { 
+          field: 'calculation', 
+          message: 'Wystąpił błąd podczas przeliczania' 
+        }});
+      } finally {
+        dispatch({ type: DASHBOARD_ACTIONS.SET_CALCULATING, payload: false });
+      }
+    }, 1000); // 1 second debounce
+
+    // Cleanup function
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
   }, [state.parameters]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   // Action creators
   const actions = {
@@ -288,6 +373,14 @@ export const DashboardProvider = ({ children, initialData = {} }) => {
 
     setSickLeaveMode: useCallback((mode) => {
       dispatch({ type: DASHBOARD_ACTIONS.SET_SICK_LEAVE_MODE, payload: mode });
+    }, []),
+
+    updateSickLeaveParameters: useCallback((params) => {
+      dispatch({ type: DASHBOARD_ACTIONS.UPDATE_SICK_LEAVE_PARAMETERS, payload: params });
+    }, []),
+
+    updateZUSAccountParameters: useCallback((params) => {
+      dispatch({ type: DASHBOARD_ACTIONS.UPDATE_ZUS_ACCOUNT_PARAMETERS, payload: params });
     }, []),
 
     addSickLeavePeriod: useCallback((period, type = 'historical') => {

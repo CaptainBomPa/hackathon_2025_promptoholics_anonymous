@@ -12,12 +12,14 @@ import {
   Menu as MenuIcon,
 } from '@mui/icons-material';
 import { zusColors } from '../../constants/zus-colors';
+import { useDashboard } from '../../contexts/DashboardContext';
 
 /**
  * Dashboard Header Component
  * Provides navigation, scenario management, and export functionality
  */
 const DashboardHeader = ({ onToggleSidebar }) => {
+  const { state } = useDashboard();
 
   const handleExport = (format) => {
     // TODO: Implement PDF export functionality
@@ -65,13 +67,45 @@ const DashboardHeader = ({ onToggleSidebar }) => {
               </Box>
             </Box>
 
-            {/* Right side - Simple PDF Export Button */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {/* Right side - Status and PDF Export */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              {/* Auto-calculation status */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {state.uiState.isCalculating && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box
+                      sx={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: '50%',
+                        background: `linear-gradient(135deg, ${zusColors.info} 0%, ${zusColors.primary} 100%)`,
+                        animation: 'pulse 1.5s ease-in-out infinite',
+                        '@keyframes pulse': {
+                          '0%': { opacity: 1, transform: 'scale(1)' },
+                          '50%': { opacity: 0.7, transform: 'scale(1.1)' },
+                          '100%': { opacity: 1, transform: 'scale(1)' },
+                        },
+                      }}
+                    />
+                    <Typography variant="caption" sx={{ color: zusColors.info, fontWeight: 500 }}>
+                      Przeliczanie...
+                    </Typography>
+                  </Box>
+                )}
+                
+                {!state.uiState.isCalculating && state.uiState.lastCalculation && (
+                  <Typography variant="caption" sx={{ color: zusColors.success, fontWeight: 500 }}>
+                    ✅ Aktualne
+                  </Typography>
+                )}
+              </Box>
+              
               <Button
                 startIcon={<FileDownload />}
                 onClick={() => handleExport('pdf')}
                 variant="contained"
                 size="medium"
+                disabled={state.uiState.isCalculating}
                 sx={{ 
                   background: `linear-gradient(135deg, ${zusColors.primary} 0%, ${zusColors.success} 100%)`,
                   color: 'white',
@@ -90,6 +124,11 @@ const DashboardHeader = ({ onToggleSidebar }) => {
                   },
                   '&:active': {
                     transform: 'translateY(0px)',
+                  },
+                  '&:disabled': {
+                    background: zusColors.neutral,
+                    color: 'white',
+                    opacity: 0.6,
                   }
                 }}
               >
