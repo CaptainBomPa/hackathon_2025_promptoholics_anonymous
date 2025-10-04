@@ -6,7 +6,6 @@ import com.promptoholics.anonymous.ApiBackend.schemas.dtos.PensionCalculationRes
 import com.promptoholics.anonymous.ApiBackend.schemas.dtos.PostalCodeUpdateRequestDto;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -33,9 +32,5 @@ public class CalculationFacade {
 
         calculation.setPostalCode(postalCodeUpdateRequestDto.getPostalCode());
         pensionCalculationRepository.saveAndFlush(calculation);
-    }
-
-    public Resource generateCalculationReport(String calculationId) {
-        return null;
     }
 }

@@ -54,27 +54,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ValidationError'
 
-  /pensions/calculation-report/{calculationId}/generate:
-    post:
-      tags: [ Calculation ]
-      operationId: generateCalculationReport
-      summary: Generate calculation report
-      description: >
-        Generates a report for given pension calculation id
-      parameters:
-        - in: path
-          name: calculationId
-          description: id of the pension calculation
-          required: true
-          schema:
-            type: string
-      responses:
-        '202':
-          description: Report accepted for processing
-          content:
-            application/pdf:
-              schema: { type: string, format: binary }
-
   /pensions/calculation-report/{calculationId}/update-postal-code:
     put:
       tags: [ Calculation ]
@@ -158,7 +137,6 @@ paths:
                 format: binary
 
 components:
-
   schemas:
     PensionCalculationRequest:
       type: object
