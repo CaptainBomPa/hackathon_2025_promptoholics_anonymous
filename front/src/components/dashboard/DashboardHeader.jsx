@@ -104,7 +104,6 @@ const DashboardHeader = ({ onToggleSidebar }) => {
                             )}
                             {!state.uiState.isCalculating && state.uiState.lastCalculation && (
                                 <Typography variant="caption" sx={{ color: zusColors.success, fontWeight: 500 }}>
-                                    ✅ Aktualne
                                 </Typography>
                             )}
                         </Box>
