@@ -1,0 +1,19 @@
+POST http://localhost:8080/pensions/calculate
+Content-Type: application/json
+Accept: application/json
+
+{
+  "expectedPensionPLN": 10000.0,
+  "age": 35,
+  "sex": "F",
+  "grossSalaryPLN": 14500.0,
+  "startYear": 2012,
+  "plannedEndYear": 2060,
+  "includeSickLeave": true,
+  "zusAccountFundsPLN": 35000.5,
+  "postalCode": "02-776",
+  "additionalSickLeaves": [
+    { "startDate": "2024-02-10T00:00:00Z", "endDate": "2024-02-18T23:59:59Z" },
+    { "startDate": "2025-05-02T00:00:00Z", "endDate": "2025-05-05T23:59:59Z" }
+  ]
+}
