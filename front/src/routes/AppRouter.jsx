@@ -21,7 +21,7 @@ export default function AppRouter() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/simulator" element={<SimulatorFormPage />} />
                 <Route path="/simulator/additional" element={<SimulatorAdditionalFormPage />} />
-                <Route path="/simulator/result" element={<SimulationResultPage />} />
+                {/*<Route path="/simulator/result" element={<SimulationResultPage />} />*/}
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="*" element={<NotFoundPage />} />
             </Routes>

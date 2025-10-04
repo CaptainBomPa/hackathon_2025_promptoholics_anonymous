@@ -109,12 +109,12 @@ const SalaryTimelinePanel = () => {
       alert('Proszę wypełnić daty od i do');
       return;
     }
-    
+
     if (formData.startDate >= formData.endDate) {
       alert('Data rozpoczęcia musi być wcześniejsza niż data zakończenia');
       return;
     }
-    
+
     if (formData.type === 'salary' && (!formData.grossAmount || formData.grossAmount <= 0)) {
       alert('Proszę podać prawidłową kwotę brutto dla wynagrodzenia');
       return;
@@ -122,8 +122,8 @@ const SalaryTimelinePanel = () => {
 
     if (editingRecord) {
       // Update existing record
-      setRecords(records.map(record => 
-        record.id === editingRecord.id 
+      setRecords(records.map(record =>
+        record.id === editingRecord.id
           ? { ...record, ...formData, grossAmount: formData.type === 'break' ? null : Number(formData.grossAmount) }
           : record
       ));
@@ -154,30 +154,10 @@ const SalaryTimelinePanel = () => {
 
   const getTypeChip = (type) => {
     if (type === 'salary') {
-      return (
-        <Chip
-          icon={<WorkIcon />}
-          label="Wynagrodzenie"
-          size="small"
-          sx={{
-            background: `linear-gradient(135deg, ${zusColors.success} 0%, ${zusColors.primary} 100%)`,
-            color: 'white',
-            fontWeight: 600,
-          }}
-        />
-      );
+      return <WorkIcon />
     } else {
       return (
-        <Chip
-          icon={<PauseIcon />}
-          label="Przerwa"
-          size="small"
-          sx={{
-            background: `linear-gradient(135deg, ${zusColors.secondary} 0%, ${zusColors.error} 100%)`,
-            color: 'white',
-            fontWeight: 600,
-          }}
-        />
+          <PauseIcon />
       );
     }
   };
@@ -185,32 +165,6 @@ const SalaryTimelinePanel = () => {
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={pl}>
       <Box sx={{ p: 3 }}>
-        {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-          <Box
-            sx={{
-              p: 1,
-              borderRadius: 2,
-              background: `linear-gradient(135deg, ${zusColors.info} 0%, ${zusColors.primary} 100%)`,
-              boxShadow: `0 4px 12px ${zusColors.info}30`,
-            }}
-          >
-            <TimelineIcon sx={{ color: 'white', fontSize: 20 }} />
-          </Box>
-          <Typography 
-            variant="subtitle1" 
-            sx={{ 
-              fontWeight: 700,
-              background: `linear-gradient(135deg, ${zusColors.info} 0%, ${zusColors.primary} 100%)`,
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            Timeline Wynagrodzeń
-          </Typography>
-        </Box>
-
         {/* Add Button */}
         <Box sx={{ mb: 3 }}>
           <Button
@@ -232,17 +186,17 @@ const SalaryTimelinePanel = () => {
         </Box>
 
         {/* Table */}
-        <TableContainer 
-          component={Paper} 
-          sx={{ 
-            borderRadius: 3,
+        <TableContainer
+          component={Paper}
+          sx={{
+            borderRadius: 1,
             background: `linear-gradient(135deg, ${zusColors.primary}03 0%, white 100%)`,
             border: `1px solid ${zusColors.primary}15`,
             boxShadow: `0 4px 16px ${zusColors.primary}10`,
             overflowX: 'auto',
           }}
         >
-          <Table sx={{ minWidth: 650 }}>
+          <Table sx={{ minWidth: 450 }}>
             <TableHead>
               <TableRow
                 sx={{
@@ -258,7 +212,7 @@ const SalaryTimelinePanel = () => {
             </TableHead>
             <TableBody>
               {records.map((record) => (
-                <TableRow 
+                <TableRow
                   key={record.id}
                   sx={{
                     '&:hover': {
@@ -318,10 +272,10 @@ const SalaryTimelinePanel = () => {
         </TableContainer>
 
         {/* Summary */}
-        <Box 
-          sx={{ 
-            mt: 3, 
-            p: 3, 
+        <Box
+          sx={{
+            mt: 3,
+            p: 3,
             borderRadius: 2,
             background: `linear-gradient(135deg, ${zusColors.info}08 0%, ${zusColors.secondary}05 100%)`,
             border: `1px solid ${zusColors.info}20`,
@@ -342,8 +296,8 @@ const SalaryTimelinePanel = () => {
         </Box>
 
         {/* Dialog for Add/Edit */}
-        <Dialog 
-          open={dialogOpen} 
+        <Dialog
+          open={dialogOpen}
           onClose={() => setDialogOpen(false)}
           maxWidth="sm"
           fullWidth

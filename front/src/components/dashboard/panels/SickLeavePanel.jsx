@@ -100,31 +100,6 @@ const SickLeavePanel = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-        <Box
-          sx={{
-            p: 1,
-            borderRadius: 2,
-            background: `linear-gradient(135deg, ${zusColors.error} 0%, ${zusColors.secondary} 100%)`,
-            boxShadow: `0 4px 12px ${zusColors.error}30`,
-          }}
-        >
-          <SickLeaveIcon sx={{ color: 'white', fontSize: 20 }} />
-        </Box>
-        <Typography 
-          variant="subtitle1" 
-          sx={{ 
-            fontWeight: 700,
-            background: `linear-gradient(135deg, ${zusColors.error} 0%, ${zusColors.secondary} 100%)`,
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}
-        >
-          Zwolnienia chorobowe
-        </Typography>
-      </Box>
 
       {/* Info Alert */}
       <Alert 
@@ -170,7 +145,7 @@ const SickLeavePanel = () => {
             <RadioGroup
               value={sickLeaveMode}
               onChange={handleModeChange}
-              sx={{ gap: 2 }}
+              sx={{ gap: 0 }}
             >
               {/* Averaged Option */}
               <FormControlLabel
@@ -187,7 +162,7 @@ const SickLeavePanel = () => {
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1 }}>
                     <Chip
                       icon={getModeIcon('averaged')}
-                      label="Średnia dla wieku"
+                      label="Średnia"
                       size="small"
                       sx={{
                         background: sickLeaveMode === 'averaged' 
@@ -205,7 +180,7 @@ const SickLeavePanel = () => {
                 }
                 sx={{
                   m: 0,
-                  p: 2,
+                  p: 1,
                   borderRadius: 2,
                   border: `2px solid ${sickLeaveMode === 'averaged' ? zusColors.info + '40' : 'transparent'}`,
                   background: sickLeaveMode === 'averaged' 
@@ -251,7 +226,7 @@ const SickLeavePanel = () => {
                 }
                 sx={{
                   m: 0,
-                  p: 2,
+                  p: 1,
                   borderRadius: 2,
                   border: `2px solid ${sickLeaveMode === 'none' ? zusColors.neutral + '40' : 'transparent'}`,
                   background: sickLeaveMode === 'none' 
@@ -291,17 +266,17 @@ const SickLeavePanel = () => {
                       }}
                     />
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
-                      <Typography variant="body2" sx={{ color: zusColors.dark, opacity: 0.8 }}>
-                        ✏️ Podaj własną średnią dni chorobowych w roku:
+                      <Typography variant="body2" sx={{ width: '110px', color: zusColors.dark, opacity: 0.8 }}>
+                        ✏️ Własna średnia liczba dni chorobowych:
                       </Typography>
                       <TextField
                         size="small"
                         value={customDays}
                         onChange={handleCustomDaysChange}
                         disabled={sickLeaveMode !== 'custom'}
-                        placeholder="np. 15"
+                        placeholder="np. 8"
                         sx={{
-                          width: 80,
+                          width: 100,
                           '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
                             background: sickLeaveMode === 'custom' ? 'white' : 'transparent',
@@ -323,7 +298,7 @@ const SickLeavePanel = () => {
                 }
                 sx={{
                   m: 0,
-                  p: 2,
+                  p: 1,
                   borderRadius: 2,
                   border: `2px solid ${sickLeaveMode === 'custom' ? zusColors.secondary + '40' : 'transparent'}`,
                   background: sickLeaveMode === 'custom' 

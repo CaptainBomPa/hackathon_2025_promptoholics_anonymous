@@ -62,7 +62,7 @@ const initialState = {
   // UI state
   uiState: {
     isCalculating: false,
-    activePanel: 'basic',
+    activePanel: null,
     sidebarCollapsed: false,
     errors: {},
     lastCalculation: null,
