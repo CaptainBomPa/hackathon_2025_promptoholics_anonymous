@@ -8,7 +8,9 @@ import {
   Slider,
   Alert,
 } from '@mui/material';
+import { TrendingUp } from '@mui/icons-material';
 import { useDashboard } from '../../../contexts/DashboardContext';
+import { zusColors } from '../../../constants/zus-colors';
 
 /**
  * Indexation Panel Component
@@ -43,9 +45,12 @@ const IndexationPanel = () => {
 
   return (
     <Box sx={{ p: 2 }}>
-      <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-        Indeksacja i inflacja
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+        <TrendingUp sx={{ color: zusColors.primary, fontSize: 20 }} />
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: zusColors.primary }}>
+          Indeksacja i inflacja
+        </Typography>
+      </Box>
 
       <Grid container spacing={2}>
         {/* Wage Growth Rate */}
@@ -129,7 +134,7 @@ const IndexationPanel = () => {
         <Typography 
           variant="h6" 
           sx={{ 
-            color: realWageGrowth > 0 ? 'success.main' : realWageGrowth < 0 ? 'error.main' : 'text.primary',
+            color: realWageGrowth > 0 ? zusColors.success : realWageGrowth < 0 ? zusColors.error : 'text.primary',
             fontWeight: 600,
           }}
         >
@@ -163,9 +168,9 @@ const IndexationPanel = () => {
                   cursor: 'pointer',
                   transition: 'all 0.2s',
                   '&:hover': {
-                    borderColor: 'primary.main',
-                    backgroundColor: 'primary.main',
-                    color: 'primary.contrastText',
+                    borderColor: zusColors.primary,
+                    backgroundColor: zusColors.primary,
+                    color: 'white',
                   },
                 }}
               >

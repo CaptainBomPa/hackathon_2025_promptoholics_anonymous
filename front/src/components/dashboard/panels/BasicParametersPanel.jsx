@@ -6,9 +6,10 @@ import {
   Typography,
   Grid,
   InputAdornment,
-  FormHelperText,
 } from '@mui/material';
+import { Person } from '@mui/icons-material';
 import { useDashboard } from '../../../contexts/DashboardContext';
+import { zusColors } from '../../../constants/zus-colors';
 
 /**
  * Basic Parameters Panel Component
@@ -35,9 +36,12 @@ const BasicParametersPanel = () => {
 
   return (
     <Box sx={{ p: 2 }}>
-      <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-        Parametry podstawowe
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+        <Person sx={{ color: zusColors.primary, fontSize: 20 }} />
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: zusColors.primary }}>
+          Parametry podstawowe
+        </Typography>
+      </Box>
 
       <Grid container spacing={2}>
         {/* Age */}
@@ -67,6 +71,24 @@ const BasicParametersPanel = () => {
           >
             <MenuItem value="F">Kobieta</MenuItem>
             <MenuItem value="M">Mężczyzna</MenuItem>
+          </TextField>
+        </Grid>
+
+        {/* Work Type */}
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            size="small"
+            select
+            label="Typ pracy"
+            value={basic.workType || 'employment'}
+            onChange={(e) => handleBasicParameterChange('workType', e.target.value)}
+            helperText="Rodzaj umowy wpływa na wysokość składek ZUS"
+          >
+            <MenuItem value="employment">💼 Umowa o pracę</MenuItem>
+            <MenuItem value="mandate">📋 Umowa o zlecenie</MenuItem>
+            <MenuItem value="business">🏢 Jednoosobowa działalność gospodarcza (JDG)</MenuItem>
+            <MenuItem value="contract">📝 Umowa o dzieło</MenuItem>
           </TextField>
         </Grid>
 
@@ -137,30 +159,89 @@ const BasicParametersPanel = () => {
       </Grid>
 
       {/* Summary information */}
-      <Box sx={{ mt: 3, p: 2, backgroundColor: 'background.default', borderRadius: 1 }}>
-        <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
-          Podsumowanie:
-        </Typography>
-        <Typography variant="body2" sx={{ mb: 0.5 }}>
-          <strong>Lata pracy:</strong> {workingYears > 0 ? workingYears : 0} lat
-        </Typography>
-        <Typography variant="body2" sx={{ mb: 0.5 }}>
-          <strong>Do emerytury:</strong> {yearsToRetirement > 0 ? yearsToRetirement : 0} lat
-        </Typography>
-        <Typography variant="body2">
-          <strong>Roczne wynagrodzenie:</strong> {(basic.grossSalary * 12).toLocaleString('pl-PL')} PLN
+      <Box 
+        sx={{ 
+          mt: 3, 
+          p: 3, 
+          background: `linear-gradient(135deg, ${zusColors.primary}05 0%, ${zusColors.info}03 100%)`,
+          border: `1px solid ${zusColors.primary}15`,
+          borderRadius: 2,
+          boxShadow: `0 2px 8px ${zusColors.primary}10`,
+        }}
+      >
+        <Typography 
+          variant="subtitle2" 
+          sx={{ 
+            color: zusColors.primary, 
+            fontWeight: 600, 
+            mb: 2,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+          }}
+        >
+          📊 Podsumowanie parametrów
         </Typography>
         
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="body2" sx={{ color: zusColors.dark, opacity: 0.8 }}>
+              Lata pracy:
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: zusColors.primary }}>
+              {workingYears > 0 ? workingYears : 0} lat
+            </Typography>
+          </Box>
+          
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="body2" sx={{ color: zusColors.dark, opacity: 0.8 }}>
+              Do emerytury:
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: zusColors.info }}>
+              {yearsToRetirement > 0 ? yearsToRetirement : 0} lat
+            </Typography>
+          </Box>
+          
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="body2" sx={{ color: zusColors.dark, opacity: 0.8 }}>
+              Roczne wynagrodzenie:
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: zusColors.secondary }}>
+              {(basic.grossSalary * 12).toLocaleString('pl-PL')} PLN
+            </Typography>
+          </Box>
+        </Box>
+        
         {workingYears < 25 && (
-          <FormHelperText error sx={{ mt: 1 }}>
-            ⚠️ Uwaga: Mniej niż 25 lat pracy może znacząco obniżyć emeryturę
-          </FormHelperText>
+          <Box 
+            sx={{ 
+              mt: 2, 
+              p: 2, 
+              background: `linear-gradient(135deg, ${zusColors.error}08 0%, ${zusColors.error}05 100%)`,
+              border: `1px solid ${zusColors.error}20`,
+              borderRadius: 1,
+            }}
+          >
+            <Typography variant="caption" sx={{ color: zusColors.error, fontWeight: 600 }}>
+              ⚠️ Uwaga: Mniej niż 25 lat pracy może znacząco obniżyć emeryturę
+            </Typography>
+          </Box>
         )}
         
         {yearsToRetirement < 0 && (
-          <FormHelperText error sx={{ mt: 1 }}>
-            ⚠️ Uwaga: Planowany rok emerytury jest w przeszłości
-          </FormHelperText>
+          <Box 
+            sx={{ 
+              mt: 2, 
+              p: 2, 
+              background: `linear-gradient(135deg, ${zusColors.error}08 0%, ${zusColors.error}05 100%)`,
+              border: `1px solid ${zusColors.error}20`,
+              borderRadius: 1,
+            }}
+          >
+            <Typography variant="caption" sx={{ color: zusColors.error, fontWeight: 600 }}>
+              ⚠️ Uwaga: Planowany rok emerytury jest w przeszłości
+            </Typography>
+          </Box>
         )}
       </Box>
     </Box>

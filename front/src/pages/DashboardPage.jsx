@@ -109,20 +109,45 @@ const DashboardContent = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
-      {/* Sidebar */}
-      <DashboardSidebar 
-        open={sidebarOpen} 
-        onClose={() => setSidebarOpen(false)} 
-      />
-
-      {/* Main content area */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-        {/* Header */}
+    <Box 
+      sx={{ 
+        minHeight: '100vh', 
+        background: `linear-gradient(135deg, #f8fffe 0%, #f0f9f7 25%, #e8f5f3 50%, #f0f9f7 75%, #f8fffe 100%)`,
+        position: 'relative',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '300px',
+          background: `linear-gradient(135deg, rgba(0, 153, 63, 0.03) 0%, rgba(63, 132, 210, 0.02) 100%)`,
+          zIndex: 0,
+        }
+      }}
+    >
+      {/* Header - full width at top */}
+      <Box sx={{ position: 'relative', zIndex: 1 }}>
         <DashboardHeader onToggleSidebar={handleToggleSidebar} />
+      </Box>
+
+      {/* Content area with sidebar */}
+      <Box sx={{ 
+        display: 'flex', 
+        position: 'relative', 
+        zIndex: 1,
+        minHeight: 'calc(100vh - 73px)', // Full height minus header
+      }}>
+        {/* Sidebar */}
+        <DashboardSidebar 
+          open={sidebarOpen} 
+          onClose={() => setSidebarOpen(false)} 
+        />
 
         {/* Main content */}
-        <DashboardMainContent />
+        <Box sx={{ flex: 1 }}>
+          <DashboardMainContent />
+        </Box>
       </Box>
     </Box>
   );
