@@ -208,9 +208,9 @@ components:
           type: string
           enum:
             - B2B
-            - EMPLOYMENT_CONTRACT
-            - MANDATE_CONTRACT
-            - CONTRACT_FOR_SPECIFIC_WORK
+            - UMOWA_O_PRACE
+            - UMOWA_ZLECENIE
+            - UMOWA_O_DZIELO
 
     PensionCalculationResponse:
       type: object

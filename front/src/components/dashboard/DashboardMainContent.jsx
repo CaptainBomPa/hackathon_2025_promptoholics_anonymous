@@ -20,6 +20,7 @@ import { useDashboard } from '../../contexts/DashboardContext';
 import { zusColors } from '../../constants/zus-colors';
 import { formatCurrency } from '../../utils/pension-formatting';
 import { ZUSAccountGrowthChart, SalaryProjectionChart } from './charts';
+import { useCountUp } from '../../hooks/useCountUp';
 
 const CARD_MIN_HEIGHT = 180; // równa wysokość
 
@@ -49,6 +50,7 @@ const DashboardMainContent = () => {
 
             {/* Results Summary Section */}
             <Box
+                id="report-summary" // ⬅️ sekcja do PDF
                 sx={{
                     mb: 4,
                     p: { xs: 2.5, sm: 3 },
@@ -152,7 +154,7 @@ const DashboardMainContent = () => {
                         icon={<AccountBalance />}
                         color={zusColors.info}
                         loading={state.uiState.isCalculating}
-                        valueFormatter={formatCurrency}
+                        valueFormatter={(v) => formatCurrency(Math.round(v))}
                         trend={state.results?.realAmountDeflatedDeltaPct}
                     />
 
@@ -163,7 +165,7 @@ const DashboardMainContent = () => {
                         icon={<TrendingUp />}
                         color={zusColors.primary}
                         loading={state.uiState.isCalculating}
-                        valueFormatter={formatCurrency}
+                        valueFormatter={(v) => formatCurrency(Math.round(v))}
                         trend={state.results?.nominalDeltaPct}
                     />
 
@@ -240,6 +242,7 @@ const DashboardMainContent = () => {
                 {/* ZUS Account Growth Chart */}
                 <Box sx={{ mb: 4 }}>
                     <Paper
+                        id="report-zus-chart" // ⬅️ sekcja do PDF
                         elevation={0}
                         sx={{
                             p: { xs: 2.5, md: 4 },
@@ -283,6 +286,7 @@ const DashboardMainContent = () => {
                 {/* Salary Projection Chart */}
                 <Box sx={{ mb: 4 }}>
                     <Paper
+                        id="report-salary-chart" // ⬅️ sekcja do PDF
                         elevation={0}
                         sx={{
                             p: { xs: 2.5, md: 4 },
@@ -327,7 +331,6 @@ const DashboardMainContent = () => {
     );
 };
 
-/** TrendChip */
 const TrendChip = ({ trend }) => {
     if (trend == null || Number.isNaN(trend)) return null;
     const up = trend > 0;
@@ -368,14 +371,20 @@ const MetricCard = ({
                         valueFormatter,
                         trend,
                     }) => {
+    // Extract numeric value for animation
+    const numericValue = Number(value) || 0;
+    const decimals = isPercentage ? 1 : 0;
+    
+    // Use count-up animation when not loading
+    const animatedValue = useCountUp(numericValue, 1500, decimals, !loading);
+    
     const formatVal = (v) => {
         if (loading) return '';
         if (isPercentage) {
             const sign = showSign && v > 0 ? '+' : '';
-            const num = Number(v) || 0;
-            return `${sign}${num.toFixed(1)}%`;
+            return `${sign}${v.toFixed(1)}%`;
         }
-        return valueFormatter ? valueFormatter(v) : String(v);
+        return valueFormatter ? valueFormatter(v) : String(Math.round(v));
     };
 
     return (
@@ -457,9 +466,16 @@ const MetricCard = ({
                                     WebkitTextFillColor: 'transparent',
                                     mb: 0.5,
                                     fontSize: { xs: '1.65rem', sm: '1.85rem', md: '2rem' },
+                                    // Add subtle animation during count-up
+                                    animation: !loading && animatedValue !== numericValue ? 'countUpPulse 0.3s ease-in-out' : 'none',
+                                    '@keyframes countUpPulse': {
+                                        '0%': { transform: 'scale(1)' },
+                                        '50%': { transform: 'scale(1.02)' },
+                                        '100%': { transform: 'scale(1)' },
+                                    },
                                 }}
                             >
-                                {formatVal(value)}
+                                {formatVal(animatedValue)}
                             </Typography>
                             <Typography
                                 variant="caption"

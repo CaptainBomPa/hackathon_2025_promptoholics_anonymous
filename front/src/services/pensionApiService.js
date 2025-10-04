@@ -86,12 +86,35 @@ const transformApiResponse = (apiResponse) => {
     // Postponement scenarios
     ifPostponedYears: result.ifPostponedYears || [],
     
-    // ZUS account growth projection
-    accountGrowthProjection: result.zusAccountFundsByYear || [],
+    // ZUS account growth projection - transform backend format to frontend format
+    accountGrowthProjection: transformZUSAccountData(result.zusAccountFundsByYear || []),
     
     // Generate salary projection (mock for now - could be enhanced)
     salaryProjection: generateSalaryProjection(result),
   };
+};
+
+/**
+ * Transform ZUS account data from backend format to frontend format
+ */
+const transformZUSAccountData = (zusAccountFundsByYear) => {
+  if (!zusAccountFundsByYear || zusAccountFundsByYear.length === 0) {
+    return [];
+  }
+  
+  return zusAccountFundsByYear.map((item, index) => {
+    const previousBalance = index > 0 ? zusAccountFundsByYear[index - 1].zusAccountFundsPLN : 0;
+    const currentBalance = item.zusAccountFundsPLN || 0;
+    const annualContribution = Math.max(0, currentBalance - previousBalance);
+    
+    return {
+      year: item.year,
+      balance: Math.round(currentBalance),
+      annualContribution: Math.round(annualContribution),
+      voluntaryContribution: 0, // Backend doesn't provide this separately
+      totalContribution: Math.round(annualContribution),
+    };
+  });
 };
 
 /**
