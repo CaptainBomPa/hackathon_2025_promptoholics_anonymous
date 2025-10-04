@@ -264,7 +264,6 @@ export default function SimulationResultPage() {
                             onClick={handleGoToDashboard}
                             variant="contained"
                             size="small"
-                            disabled // Will be enabled when dashboard is implemented
                         >
                             Przejdź do dashboardu
                         </Button>

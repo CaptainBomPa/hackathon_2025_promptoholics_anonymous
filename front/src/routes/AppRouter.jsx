@@ -4,6 +4,7 @@ import HomePage from '../pages/HomePage'
 import LoginPage from '../pages/LoginPage'
 import SimulatorFormPage from '../pages/SimulatorFormPage'
 import SimulationResultPage from '../pages/SimulationResultPage'
+import DashboardPage from '../pages/DashboardPage'
 import PageTransition from '../components/transition/PageTransition'
 import SimulatorAdditionalFormPage from "../pages/SimulatorAdditionalFormPage";
 
@@ -21,6 +22,7 @@ export default function AppRouter() {
                 <Route path="/simulator" element={<SimulatorFormPage />} />
                 <Route path="/simulator/additional" element={<SimulatorAdditionalFormPage />} />
                 <Route path="/simulator/result" element={<SimulationResultPage />} />
+                <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="*" element={<NotFoundPage />} />
             </Routes>
         </PageTransition>
