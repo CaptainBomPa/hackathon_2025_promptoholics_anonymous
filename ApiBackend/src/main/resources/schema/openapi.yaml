@@ -15,7 +15,9 @@ tags:
   - name: Facts
     description: Random pension facts
   - name: Administration
-    description: Admin operations (requires privileges)
+    description: Administration related operations
+  - name: Report
+    description: Report job related operations
 
 paths:
   /pensions/calculate:
@@ -51,6 +53,58 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationError'
+
+  /pensions/calculation-report/{calculationId}/generate:
+    post:
+      tags: [ Calculation ]
+      operationId: generateCalculationReport
+      summary: Generate calculation report
+      description: >
+        Generates a report for given pension calculation id
+      parameters:
+        - in: path
+          name: calculationId
+          description: id of the pension calculation
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserReportCreateRequest'
+      responses:
+        '202':
+          description: Report accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportJob'
+
+  /pensions/calculation-report/{calculationId}/update-postal-code:
+    put:
+      tags: [ Calculation ]
+      operationId: enterPostalCodeForCalculation
+      summary: Enter postal code for calculation
+      description: >
+        Enter a postal code for calculation
+      parameters:
+        - in: path
+          name: calculationId
+          description: id of the pension calculation
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostalCodeUpdateRequest'
+      responses:
+        '200':
+          description: Successful postal code update
 
   /facts/random:
     get:
@@ -96,7 +150,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReportCreateRequest'
+              $ref: '#/components/schemas/AdminReportCreateRequest'
       responses:
         '202':
           description: Report accepted for processing
@@ -107,8 +161,8 @@ paths:
 
   /admin/reports/{reportId}:
     get:
-      tags: [Administration]
-      operationId: getAdminReport
+      tags: [Report]
+      operationId: getReport
       summary: Report status and download link
       parameters:
         - in: path
@@ -133,8 +187,8 @@ paths:
 
   /admin/reports/{reportId}/download:
     get:
-      tags: [Administration]
-      operationId: downloadAdminReport
+      tags: [Report]
+      operationId: downloadReport
       summary: Download generated report
       parameters:
         - in: path
@@ -207,36 +261,27 @@ components:
           nullable: true
           minimum: 0
           description: Funds on the main ZUS account (optional).
-        zusSubaccountFundsPLN:
-          type: number
-          format: float
-          nullable: true
-          minimum: 0
-          description: Funds on the ZUS subaccount (optional).
         postalCode:
           type: string
           nullable: true
-          pattern: '^\d{2}-\d{3}$'
-          description: Optional postal code in the format 00-000.
+        additionalSickLeaves:
+          type: array
+          properties:
+            startDate:
+              type: string
+              format: date-time
+            endDate:
+              type: string
+              format: date-time
 
     PensionCalculationResponse:
       type: object
       properties:
+        id:
+          type: string
         requestedAt:
           type: string
           format: date-time
-        assumptions:
-          type: object
-          properties:
-            retirementAgeYear:
-              type: integer
-            inflationModel:
-              type: string
-            wageIndexationSource:
-              type: string
-              description: e.g., national statistics office index series.
-            sickLeaveAssumption:
-              type: string
         result:
           type: object
           required:
@@ -248,10 +293,10 @@ components:
               type: number
               format: float
               description: Nominal amount in retirement year.
-            realAmountPLN_2025:
+            realAmountDeflated:
               type: number
               format: float
-              description: Amount deflated to purchasing power of the base year (e.g., 2025).
+              description: Amount deflated to purchasing power of the base year.
             replacementRatePct:
               type: number
               format: float
@@ -267,10 +312,13 @@ components:
               type: number
               format: float
             ifPostponedYears:
-              type: object
-              additionalProperties:
+              type: array
+              items:
                 type: object
                 properties:
+                  postponedByYears:
+                    type: integer
+                    format: int32
                   actualAmountPLN:
                     type: number
                     format: float
@@ -286,8 +334,22 @@ components:
                 extraYearsRequiredEstimate:
                   type: integer
                   nullable: true
-        traceId:
+            zusAccountFundsByYear:
+              type: array
+              items:
+                properties:
+                  year:
+                    type: integer
+                  zusAccountFundsPLN:
+                    type: number
+                    format: float
+
+    PostalCodeUpdateRequest:
+      type: object
+      properties:
+        postalCode:
           type: string
+          nullable: false
 
     Fact:
       type: object
@@ -309,7 +371,15 @@ components:
           type: string
           format: date-time
 
-    ReportCreateRequest:
+    UserReportCreateRequest:
+      type: object
+      required: [dateFrom, dateTo]
+      properties:
+        calculationId:
+          type: string
+          description: Identifier of the calculation for which the report is created
+
+    AdminReportCreateRequest:
       type: object
       required: [dateFrom, dateTo]
       properties:
@@ -323,23 +393,6 @@ components:
           type: string
           enum: [xls, csv]
           default: xls
-        timezone:
-          type: string
-          example: Europe/Warsaw
-        filters:
-          type: object
-          properties:
-            includePostalCode:
-              type: boolean
-              default: true
-            sex:
-              type: array
-              items:
-                type: string
-                enum: [F, M]
-            includeSickLeaveOnly:
-              type: boolean
-              nullable: true
 
     ReportJob:
       type: object
