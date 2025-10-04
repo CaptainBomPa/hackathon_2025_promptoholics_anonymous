@@ -21,18 +21,13 @@ import { zusColors } from '../../constants/zus-colors';
 import { formatCurrency } from '../../utils/pension-formatting';
 import { ZUSAccountGrowthChart, SalaryProjectionChart } from './charts';
 
-const CARD_MIN_HEIGHT = 180; // jedna wysokość dla wszystkich kart
-const CARD_MAX_WIDTH = 320;
+const CARD_MIN_HEIGHT = 180; // równa wysokość
 
-/**
- * Dashboard Main Content Component
- * Displays charts, results, and visualizations in responsive layout
- */
 const DashboardMainContent = () => {
     const { state, computed } = useDashboard();
 
     return (
-        <Box sx={{ flex: 1, p: 3 }}>
+        <Box sx={{ flex: 1, p: { xs: 2, md: 3 }, minWidth: 0 }}>
             {/* Error display */}
             {computed.hasErrors && (
                 <Alert severity="error" sx={{ mb: 3 }}>
@@ -52,7 +47,7 @@ const DashboardMainContent = () => {
                 </Box>
             )}
 
-            {/* Results Summary Section – 2 kolumny, równe karty */}
+            {/* Results Summary Section */}
             <Box
                 sx={{
                     mb: 4,
@@ -62,6 +57,7 @@ const DashboardMainContent = () => {
                     background: `linear-gradient(135deg, ${zusColors.primary}0A 0%, ${zusColors.info}08 100%)`,
                     border: `1px solid ${zusColors.primary}26`,
                     boxShadow: '0 10px 30px rgba(0,0,0,0.06)',
+                    minWidth: 0,
                 }}
                 aria-label="Podsumowanie wyników"
             >
@@ -74,9 +70,10 @@ const DashboardMainContent = () => {
                         gap: 2,
                         mb: 3,
                         flexWrap: 'wrap',
+                        minWidth: 0,
                     }}
                 >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0 }}>
                         <Box
                             sx={{
                                 p: 1.25,
@@ -86,6 +83,7 @@ const DashboardMainContent = () => {
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
+                                flexShrink: 0,
                             }}
                         >
                             <Assessment sx={{ color: 'white', fontSize: 26 }} />
@@ -99,6 +97,9 @@ const DashboardMainContent = () => {
                                 backgroundClip: 'text',
                                 WebkitBackgroundClip: 'text',
                                 WebkitTextFillColor: 'transparent',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
                             }}
                         >
                             Podsumowanie wyników
@@ -129,15 +130,19 @@ const DashboardMainContent = () => {
                     </Box>
                 </Box>
 
-                {/* Metrics grid – dokładnie 2 kolumny od md wzwyż, 1 kolumna na mobile */}
+                {/* Metrics grid – 1col xs, 2col sm/md, 4col xl+ */}
                 <Box
                     sx={{
                         display: 'grid',
                         gap: 2.5,
+                        alignItems: 'stretch',
+                        gridAutoFlow: 'row dense',
                         gridTemplateColumns: {
                             xs: '1fr',
-                            md: '1fr 1fr',
+                            sm: 'repeat(2, minmax(0, 1fr))',
+                            xl: 'repeat(4, minmax(0, 1fr))',
                         },
+                        minWidth: 0,
                     }}
                 >
                     <MetricCard
@@ -232,14 +237,13 @@ const DashboardMainContent = () => {
                     </Typography>
                 </Box>
 
-                {/* ZUS Account Growth Chart - Full Width */}
+                {/* ZUS Account Growth Chart */}
                 <Box sx={{ mb: 4 }}>
                     <Paper
                         elevation={0}
                         sx={{
-                            p: 4,
+                            p: { xs: 2.5, md: 4 },
                             height: 520,
-                            minWidth: '100%',
                             width: '100%',
                             borderRadius: 3,
                             background: `linear-gradient(135deg, ${zusColors.primary}05 0%, white 50%, ${zusColors.info}05 100%)`,
@@ -263,17 +267,11 @@ const DashboardMainContent = () => {
                             >
                                 <AccountBalance sx={{ color: 'white', fontSize: 24 }} />
                             </Box>
-                            <Typography
-                                variant="h6"
-                                sx={{
-                                    fontWeight: 600,
-                                    color: zusColors.dark,
-                                }}
-                            >
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: zusColors.dark }}>
                                 Wzrost środków na koncie ZUS
                             </Typography>
                         </Box>
-                        <Box sx={{ width: '100%', minWidth: 800 }}>
+                        <Box sx={{ width: '100%' }}>
                             <ZUSAccountGrowthChart
                                 data={state.results.accountGrowthProjection}
                                 loading={state.uiState.isCalculating}
@@ -282,14 +280,13 @@ const DashboardMainContent = () => {
                     </Paper>
                 </Box>
 
-                {/* Salary Projection Chart - Full Width */}
+                {/* Salary Projection Chart */}
                 <Box sx={{ mb: 4 }}>
                     <Paper
                         elevation={0}
                         sx={{
-                            p: 4,
+                            p: { xs: 2.5, md: 4 },
                             height: 520,
-                            minWidth: '100%',
                             width: '100%',
                             borderRadius: 3,
                             background: `linear-gradient(135deg, ${zusColors.info}05 0%, white 50%, ${zusColors.secondary}05 100%)`,
@@ -313,17 +310,11 @@ const DashboardMainContent = () => {
                             >
                                 <Timeline sx={{ color: 'white', fontSize: 24 }} />
                             </Box>
-                            <Typography
-                                variant="h6"
-                                sx={{
-                                    fontWeight: 600,
-                                    color: zusColors.dark,
-                                }}
-                            >
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: zusColors.dark }}>
                                 Projekcja wynagrodzeń
                             </Typography>
                         </Box>
-                        <Box sx={{ width: '100%', minWidth: 800 }}>
+                        <Box sx={{ width: '100%' }}>
                             <SalaryProjectionChart
                                 data={state.results.salaryProjection}
                                 loading={state.uiState.isCalculating}
@@ -336,9 +327,7 @@ const DashboardMainContent = () => {
     );
 };
 
-/**
- * TrendChip – mały chip kierunku zmiany (opcjonalny)
- */
+/** TrendChip */
 const TrendChip = ({ trend }) => {
     if (trend == null || Number.isNaN(trend)) return null;
     const up = trend > 0;
@@ -366,9 +355,7 @@ const TrendChip = ({ trend }) => {
     );
 };
 
-/**
- * MetricCard – równa wysokość + pełne rozciągnięcie
- */
+/** MetricCard */
 const MetricCard = ({
                         title,
                         value,
@@ -379,7 +366,7 @@ const MetricCard = ({
                         isPercentage = false,
                         showSign = false,
                         valueFormatter,
-                        trend, // % zmiany vs poprzedni wynik (opcjonalnie)
+                        trend,
                     }) => {
     const formatVal = (v) => {
         if (loading) return '';
@@ -395,8 +382,9 @@ const MetricCard = ({
         <Card
             elevation={0}
             sx={{
+                width: '100%',
+                minWidth: 0,
                 minHeight: CARD_MIN_HEIGHT,
-                maxWidth: CARD_MAX_WIDTH,
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
@@ -406,14 +394,15 @@ const MetricCard = ({
                 border: `1px solid ${color}24`,
                 boxShadow: `0 8px 28px ${color}1f`,
                 transition: 'transform .25s ease, box-shadow .25s ease',
+                overflow: 'hidden',
                 '&:hover': {
                     transform: 'translateY(-3px)',
                     boxShadow: `0 14px 36px ${color}33`,
                 },
             }}
         >
-            <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, minWidth: 0 }}>
                     <Box
                         sx={{
                             mr: 1.5,
@@ -425,14 +414,24 @@ const MetricCard = ({
                             background: `linear-gradient(135deg, ${color}, ${zusColors.dark})`,
                             boxShadow: `0 6px 16px ${color}40`,
                             color: '#fff',
-                            flex: '0 0 44px',
+                            flexShrink: 0,
                         }}
                     >
                         {icon || <Assessment />}
                     </Box>
                     <Typography
                         variant="body2"
-                        sx={{ fontWeight: 700, letterSpacing: 0.2, color: zusColors.dark, opacity: 0.9 }}
+                        sx={{
+                            fontWeight: 700,
+                            letterSpacing: 0.2,
+                            color: zusColors.dark,
+                            opacity: 0.9,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            flex: 1,
+                        }}
+                        title={title}
                     >
                         {title}
                     </Typography>
@@ -457,7 +456,7 @@ const MetricCard = ({
                                     WebkitBackgroundClip: 'text',
                                     WebkitTextFillColor: 'transparent',
                                     mb: 0.5,
-                                    fontSize: { xs: '1.75rem', sm: '2rem' },
+                                    fontSize: { xs: '1.65rem', sm: '1.85rem', md: '2rem' },
                                 }}
                             >
                                 {formatVal(value)}
