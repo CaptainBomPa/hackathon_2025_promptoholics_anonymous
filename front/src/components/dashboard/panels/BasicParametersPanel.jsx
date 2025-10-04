@@ -23,7 +23,19 @@ const BasicParametersPanel = () => {
   const handleBasicParameterChange = (field, value) => {
     // Convert string values to numbers where appropriate
     const numericFields = ['age', 'grossSalary', 'startYear', 'plannedEndYear', 'expectedPension'];
-    const processedValue = numericFields.includes(field) ? Number(value) || 0 : value;
+    
+    let processedValue;
+    if (numericFields.includes(field)) {
+      // Handle empty string as undefined, not 0
+      if (value === '' || value === null || value === undefined) {
+        processedValue = undefined;
+      } else {
+        const numValue = Number(value);
+        processedValue = isNaN(numValue) ? undefined : numValue;
+      }
+    } else {
+      processedValue = value;
+    }
     
     actions.setBasicParameters({
       [field]: processedValue,
