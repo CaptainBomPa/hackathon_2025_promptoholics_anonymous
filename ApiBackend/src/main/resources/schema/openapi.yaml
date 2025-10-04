@@ -21,6 +21,7 @@ paths:
   /pensions/calculate:
     post:
       tags: [Calculation]
+      operationId: calculatePensions
       summary: Project future pension
       description: >
         Returns projected benefit in nominal and real terms, comparison vs. projected average,
@@ -54,6 +55,7 @@ paths:
   /facts/random:
     get:
       tags: [Facts]
+      operationId: getRandomFact
       summary: Get a random pension fact
       description: >
         Returns a single, random "Did you know…?" fact with an optional source.
@@ -82,6 +84,7 @@ paths:
   /admin/reports:
     post:
       tags: [Administration]
+      operationId: generateAdminReport
       summary: Generate usage report (XLS/CSV)
       description: >
         Creates an asynchronous usage/interest report with columns:
@@ -105,6 +108,7 @@ paths:
   /admin/reports/{reportId}:
     get:
       tags: [Administration]
+      operationId: getAdminReport
       summary: Report status and download link
       parameters:
         - in: path
@@ -130,6 +134,7 @@ paths:
   /admin/reports/{reportId}/download:
     get:
       tags: [Administration]
+      operationId: downloadAdminReport
       summary: Download generated report
       parameters:
         - in: path

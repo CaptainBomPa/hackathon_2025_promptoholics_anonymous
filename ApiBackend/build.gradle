@@ -2,7 +2,11 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.5.6'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'org.openapi.generator' version '7.7.0'
 }
+
+def openApiSpec = "${rootDir}/src/main/resources/schema/openapi.yaml"
+def outDir     = "${buildDir}/generated/openapi"
 
 group = 'com.promptoholics.anonymous'
 version = '0.0.1-SNAPSHOT'
@@ -29,11 +33,74 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'io.swagger.core.v3:swagger-annotations:2.2.22'
+	implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
+	compileOnly 'jakarta.validation:jakarta.validation-api:3.0.2'
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'com.h2database:h2'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'jakarta.validation:jakarta.validation-api:3.0.2'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+openApiGenerate {
+	generatorName = 'spring'
+	inputSpec     = openApiSpec
+	outputDir     = outDir
+
+	// Packages
+	apiPackage     = 'com.promptoholics.anonymous.ApiBackend.api'
+	modelPackage   = 'com.promptoholics.anonymous.ApiBackend.schemas.dtos'
+	invokerPackage = 'com.promptoholics.anonymous.ApiBackend.invoker'
+
+	// Suffix for every model => Foo -> FooDto
+	modelNameSuffix = 'Dto'
+
+	// EXPLICITLY tell the plugin to generate both APIs and MODELS
+	// (empty string = "all")
+	globalProperties = [
+			models          : "",
+			apis            : "",
+			supportingFiles : "",
+			modelDocs       : "false",
+			modelTests      : "false",
+			apiDocs         : "false",
+			apiTests        : "false"
+	]
+
+	// Useful Spring flags
+	configOptions = [
+			useSpringBoot3: 'true',
+			useJakartaEe  : 'true',
+			interfaceOnly : 'true',   // set to 'false' if you want concrete @RestController classes
+			useTags       : 'true',
+			dateLibrary   : 'java8',
+			useJsonNullable: 'false'  // avoids extra dependency unless you want JsonNullable
+	]
+}
+
+sourceSets {
+	main {
+		java {
+			// compile generated sources
+			srcDir "${outDir}/src/main/java"
+		}
+	}
+}
+
+tasks.compileJava {
+	// ensure generation happens before compilation
+	dependsOn tasks.openApiGenerate
+}
+
+tasks.clean {
+	// remove generated code on clean
+	delete outDir
+}
+
+tasks.named('processResources') {
+	dependsOn tasks.openApiGenerate
 }
 
 tasks.named('test') {
