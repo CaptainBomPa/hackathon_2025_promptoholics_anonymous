@@ -318,6 +318,7 @@ export const DashboardProvider = ({ children, initialData = {} }) => {
         const result = await calculatePension(state.parameters);
         
         if (result.success) {
+          
           // Transform backend data to match frontend expectations
           const transformedData = {
             ...result.data,

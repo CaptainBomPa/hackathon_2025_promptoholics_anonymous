@@ -105,6 +105,90 @@ const ZUSAccountPanel = () => {
   const impact = getEstimatedImpact();
   const workStatus = getWorkAfterRetirementStatus();
 
+  // Get postponed benefits from backend data
+  const getPostponedBenefitText = () => {
+    const postponedData = state.results?.ifPostponedYears;
+    
+
+    
+    if (!postponedData || postponedData.length === 0) {
+      // Fallback to estimated values
+      return `💰 Szacowane dodatkowe świadczenie: ${workAfterRetirement * 200}-${workAfterRetirement * 350} PLN miesięcznie`;
+    }
+    
+    // Find exact match first
+    const exactMatch = postponedData.find(item => {
+      const itemYears = parseInt(item.year || item.postponedByYears || item.years || 0);
+      return itemYears === workAfterRetirement;
+    });
+    
+    if (exactMatch) {
+      const currentPension = state.results?.actualAmountPLN || 0;
+      const postponedPension = exactMatch.actualAmountPLN || 0;
+      const difference = postponedPension - currentPension;
+      
+      const yearsText = workAfterRetirement === 1 ? 'rok' : workAfterRetirement < 5 ? 'lata' : 'lat';
+      return `💰 Pracując ${workAfterRetirement} ${yearsText} po emeryturze otrzymasz ${Math.round(postponedPension).toLocaleString('pl-PL')} PLN miesięcznie (o ${Math.round(difference)} PLN więcej niż standardowo)`;
+    }
+    
+    // If no exact match, try to interpolate/extrapolate
+    const sortedData = postponedData
+      .map(item => ({
+        years: parseInt(item.year || 0),
+        amount: item.actualAmountPLN || 0
+      }))
+      .sort((a, b) => a.years - b.years);
+    
+    if (sortedData.length >= 2) {
+      const currentPension = state.results?.actualAmountPLN || 0;
+      let estimatedAmount = 0;
+      
+      // Find two closest points for interpolation/extrapolation
+      if (workAfterRetirement <= sortedData[0].years) {
+        // Extrapolate below minimum
+        const point1 = sortedData[0];
+        const point2 = sortedData[1];
+        const slope = (point2.amount - point1.amount) / (point2.years - point1.years);
+        estimatedAmount = point1.amount + slope * (workAfterRetirement - point1.years);
+      } else if (workAfterRetirement >= sortedData[sortedData.length - 1].years) {
+        // Extrapolate above maximum
+        const point1 = sortedData[sortedData.length - 2];
+        const point2 = sortedData[sortedData.length - 1];
+        const slope = (point2.amount - point1.amount) / (point2.years - point1.years);
+        estimatedAmount = point2.amount + slope * (workAfterRetirement - point2.years);
+      } else {
+        // Interpolate between two points
+        for (let i = 0; i < sortedData.length - 1; i++) {
+          const point1 = sortedData[i];
+          const point2 = sortedData[i + 1];
+          
+          if (workAfterRetirement >= point1.years && workAfterRetirement <= point2.years) {
+            const ratio = (workAfterRetirement - point1.years) / (point2.years - point1.years);
+            estimatedAmount = point1.amount + ratio * (point2.amount - point1.amount);
+            break;
+          }
+        }
+      }
+      
+      const difference = Math.round(estimatedAmount - currentPension);
+      const yearsText = workAfterRetirement === 1 ? 'rok' : workAfterRetirement < 5 ? 'lata' : 'lat';
+      return `💰 Szacunkowo: pracując ${workAfterRetirement} ${yearsText} po emeryturze otrzymasz ~${Math.round(estimatedAmount).toLocaleString('pl-PL')} PLN miesięcznie (o ~${difference} PLN więcej)`;
+    }
+    
+    // Fallback: show available options
+    const availableOptions = postponedData.map(item => {
+      const years = parseInt(item.year || 0);
+      const amount = item.actualAmountPLN || 0;
+      const currentPension = state.results?.actualAmountPLN || 0;
+      const difference = Math.round(amount - currentPension);
+      
+      const yearText = years === 1 ? 'rok' : years < 5 ? 'lata' : 'lat';
+      return `${years} ${yearText}: +${difference} PLN`;
+    }).join(', ');
+    
+    return `💰 Dostępne opcje: ${availableOptions}`;
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       {/* Header */}
@@ -323,13 +407,14 @@ const ZUSAccountPanel = () => {
                 </Typography>
               </Box>
 
-              <Typography variant="caption" sx={{ color: zusColors.dark, opacity: 0.7, display: 'block', mb: 1 }}>
-                💰 Szacowane dodatkowe świadczenie: <strong>{workAfterRetirement * 200}-{workAfterRetirement * 350} PLN miesięcznie</strong>
-              </Typography>
-
-              <Typography variant="caption" sx={{ color: zusColors.dark, opacity: 0.7 }}>
-                🎯 Każdy rok pracy po emeryturze to około 200-350 PLN więcej emerytury
-              </Typography>
+              <Box sx={{ mb: 1 }}>
+                <Typography variant="body2" sx={{ color: zusColors.dark, fontWeight: 500, mb: 0.5 }}>
+                  {getPostponedBenefitText()}
+                </Typography>
+                <Typography variant="caption" sx={{ color: zusColors.dark, opacity: 0.7 }}>
+                  🎯 Dane z systemu kalkulacji emerytalnej
+                </Typography>
+              </Box>
             </Box>
           )}
 
