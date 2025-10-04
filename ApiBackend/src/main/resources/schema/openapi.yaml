@@ -325,10 +325,6 @@ components:
         dateTo:
           type: string
           format: date
-        format:
-          type: string
-          enum: [xls, csv]
-          default: xls
 
     Error:
       type: object

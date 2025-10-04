@@ -15,10 +15,8 @@ public class FactsController implements FactsApi {
 
     private final FactsFacade factsFacade;
 
-
     @Override
     public ResponseEntity<FactDto> getRandomFact(String locale) {
         return ResponseEntity.ok(factsFacade.getRandomFact(locale));
     }
-
 }
