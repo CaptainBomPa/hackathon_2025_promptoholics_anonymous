@@ -1,31 +1,34 @@
 import { createTheme } from '@mui/material/styles'
+import { ZUS } from './zusPalette'
 
-export default function themeFactory(mode) {
+export function buildTheme({ mode = 'light', fontScale = 1 }) {
     const isDark = mode === 'dark'
     return createTheme({
         palette: {
             mode,
-            background: {
-                default: isDark ? '#0f1115' : '#f5f6fa',
-                paper: isDark ? '#151922' : '#ffffff'
-            },
-            primary: { main: isDark ? '#7aa2f7' : '#1976d2' },
+            primary: { main: ZUS.green },
+            secondary: { main: ZUS.blue },
+            error: { main: ZUS.red },
             text: {
-                primary: isDark ? '#e6e6e6' : '#1a1a1a',
-                secondary: isDark ? '#a9b0bc' : '#555'
-            }
+                primary: isDark ? '#e6e6e6' : ZUS.black,
+                secondary: isDark ? '#a9b0bc' : '#515764'
+            },
+            background: {
+                default: isDark ? ZUS.bgDark : ZUS.bgLight,
+                paper: isDark ? '#141824' : '#ffffff'
+            },
+            divider: isDark ? 'rgba(255,255,255,0.12)' : ZUS.gray
         },
-        shape: { borderRadius: 12 },
+        shape: { borderRadius: 16 },
         typography: {
+            // globalne skalowanie czcionki (A+/A-)
+            htmlFontSize: 16 * fontScale,
             fontFamily: 'Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif',
-            fontWeightLight: 300,
-            fontWeightRegular: 400,
-            fontWeightMedium: 500
+            fontWeightMedium: 600
         },
         components: {
-            MuiPaper: { styleOverrides: { root: { borderRadius: 12, padding: '1.5rem' } } },
-            MuiButton: { styleOverrides: { root: { borderRadius: 10, textTransform: 'none', padding: '0.6rem 1.2rem', fontWeight: 500 } } },
-            MuiTextField: { styleOverrides: { root: { '& .MuiOutlinedInput-root': { borderRadius: 10 } } } }
+            MuiPaper: { styleOverrides: { root: { borderRadius: 20 } } },
+            MuiButton: { styleOverrides: { root: { borderRadius: 999, textTransform: 'none' } } }
         }
     })
 }

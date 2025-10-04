@@ -1,28 +1,32 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { createRoot } from 'react-dom/client'
+import { CssBaseline, ThemeProvider } from '@mui/material'
 import { BrowserRouter } from 'react-router-dom'
-import { CssBaseline } from '@mui/material'
-import { ThemeProvider } from '@mui/material/styles'
 import App from './app/App'
-import { useThemeMode } from './hooks/useThemeMode'
-import themeFactory from './theme/theme'
+import { UiPrefsProvider, useUiPrefs } from './contexts/UiPrefsContext'
+import { buildTheme } from './theme/theme'
+import './index.css'
 import '@fontsource/inter/400.css'
 import '@fontsource/inter/500.css'
 import '@fontsource/inter/700.css'
-import './index.css'
 
-function Providers() {
-    const { mode, toggle } = useThemeMode()
-    const theme = themeFactory(mode)
+function ThemedProviders() {
+    const { mode, fontScale } = useUiPrefs()
+    const theme = useMemo(() => buildTheme({ mode, fontScale }), [mode, fontScale])
+
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
             <BrowserRouter>
-                <App mode={mode} toggleTheme={toggle} />
+                <App />
             </BrowserRouter>
         </ThemeProvider>
     )
 }
 
 const container = document.getElementById('root')
-createRoot(container).render(<Providers />)
+createRoot(container).render(
+    <UiPrefsProvider>
+        <ThemedProviders />
+    </UiPrefsProvider>
+)

@@ -1,9 +1,8 @@
 import React, { useState } from 'react'
 import { Box, Button, TextField, Typography, Paper, Divider } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
-import ThemeSwitch from '../components/common/ThemeSwitch'
 
-export default function LoginPage({ mode, toggleTheme }) {
+export default function LoginPage() {
     const [login, setLogin] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
@@ -25,37 +24,27 @@ export default function LoginPage({ mode, toggleTheme }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: mode === 'dark'
-                    ? 'linear-gradient(135deg, #0b0d12 0%, #121623 100%)'
-                    : 'linear-gradient(135deg, #e0f2ff 0%, #f5f6fa 100%)',
-                px: 2,
-                position: 'relative'
+                background: (theme) =>
+                    theme.palette.mode === 'dark'
+                        ? 'linear-gradient(135deg, #0b0d12 0%, #121623 100%)'
+                        : 'linear-gradient(135deg, rgba(0,153,63,0.06) 0%, rgba(63,132,210,0.06) 100%)',
+                px: 2
             }}
         >
-            <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
-                <ThemeSwitch mode={mode} onToggle={toggleTheme} />
-            </Box>
-
             <Paper
                 elevation={3}
                 sx={{
                     p: 5,
                     width: '100%',
-                    maxWidth: 400,
-                    borderRadius: 4,
+                    maxWidth: 420,
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 3,
-                    backdropFilter: 'blur(6px)'
+                    gap: 3
                 }}
             >
-                <Box textAlign="center" mb={1}>
-                    <Typography variant="h4" fontWeight={600} color="primary.main">
-                        Hackathon App
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                        Zaloguj się, aby kontynuować
-                    </Typography>
+                <Box textAlign="center">
+                    <Typography variant="h4" color="primary.main">Panel administratora</Typography>
+                    <Typography variant="body2" color="text.secondary">Zaloguj się, aby zarządzać</Typography>
                 </Box>
 
                 <Divider />
@@ -66,7 +55,6 @@ export default function LoginPage({ mode, toggleTheme }) {
                         value={login}
                         onChange={(e) => setLogin(e.target.value)}
                         fullWidth
-                        variant="outlined"
                     />
                     <TextField
                         label="Hasło"
@@ -74,21 +62,17 @@ export default function LoginPage({ mode, toggleTheme }) {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         fullWidth
-                        variant="outlined"
                     />
                     {error && (
                         <Typography color="error" variant="body2" textAlign="center">
                             {error}
                         </Typography>
                     )}
-                    <Button type="submit" variant="contained" size="large" sx={{ mt: 1 }}>
-                        Zaloguj się
-                    </Button>
+                    <Button type="submit" variant="contained" size="large">Zaloguj</Button>
+                    <Typography variant="caption" color="text.secondary" textAlign="center">
+                        Demo: <strong>admin/admin</strong>
+                    </Typography>
                 </form>
-
-                <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ mt: 2 }}>
-                    Demo: <strong>admin / admin</strong>
-                </Typography>
             </Paper>
         </Box>
     )
