@@ -4,6 +4,7 @@ import com.promptoholics.anonymous.ApiBackend.api.CalculationApi;
 import com.promptoholics.anonymous.ApiBackend.application.CalculationFacade;
 import com.promptoholics.anonymous.ApiBackend.schemas.dtos.PensionCalculationRequestDto;
 import com.promptoholics.anonymous.ApiBackend.schemas.dtos.PensionCalculationResponseDto;
+import com.promptoholics.anonymous.ApiBackend.schemas.dtos.PostalCodeUpdateRequestDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -20,5 +21,10 @@ public class CalculationController implements CalculationApi {
     public ResponseEntity<PensionCalculationResponseDto> calculatePensions(PensionCalculationRequestDto request) {
         var response = calculationFacade.calculatePensions(request);
         return ResponseEntity.ok(response);
+    }
+
+    public ResponseEntity<Void> enterPostalCodeForCalculation(String calculationId, PostalCodeUpdateRequestDto request) {
+        calculationFacade.enterPostalCodeForCalculation(calculationId, request);
+        return ResponseEntity.ok(null);
     }
 }
