@@ -61,7 +61,6 @@ public class FactsFacade {
         dto.setText(text);
         dto.setGeneratedAt(OffsetDateTime.now());
 
-
         return dto;
     }
 
