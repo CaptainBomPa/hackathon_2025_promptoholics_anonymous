@@ -3,7 +3,7 @@ package com.promptoholics.anonymous.ApiBackend.domain;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import lombok.Getter;
+import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -18,7 +18,7 @@ import java.util.UUID;
         }
 )
 @EntityListeners(AuditingEntityListener.class)
-@Getter
+@Data
 public class PensionCalculationEntity {
 
     @Id
@@ -57,4 +57,8 @@ public class PensionCalculationEntity {
 
     @Column(name = "postal_code")
     private String postalCode;
+
+    @Version
+    @Column(name = "version")
+    private Integer version;
 }
