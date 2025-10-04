@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Typography,
@@ -14,9 +14,7 @@ import {
   AccountBalance as AccountBalanceIcon,
   Euro as EuroIcon,
   Info as InfoIcon,
-
   Work as WorkIcon,
-  AccessTime as AccessTimeIcon,
 } from '@mui/icons-material';
 import { useDashboard } from '../../../contexts/DashboardContext';
 import { zusColors } from '../../../constants/zus-colors';
@@ -45,7 +43,7 @@ const ZUSAccountPanel = () => {
     }
   };
 
-  const handleWorkAfterRetirementChange = (event, newValue) => {
+  const handleWorkAfterRetirementChange = (_, newValue) => {
     setWorkAfterRetirement(newValue);
     
     // Update context
@@ -72,22 +70,7 @@ const ZUSAccountPanel = () => {
     }
   };
 
-  const getEstimatedImpact = () => {
-    const balance = parseFloat(accountBalance) || 0;
-    const workYears = workAfterRetirement;
-    const totalAmount = balance + (workYears * 15000); // Extra work contributes ~15k per year
 
-    if (totalAmount === 0 && workYears === 0) {
-      return { text: 'Brak wpływu na emeryturę', color: zusColors.neutral };
-    } else if (totalAmount < 50000 && workYears === 0) {
-      return { text: 'Zwiększenie emerytury o ~50-150 PLN miesięcznie', color: zusColors.info };
-    } else if (totalAmount < 150000 && workYears <= 2) {
-      return { text: 'Zwiększenie emerytury o ~150-400 PLN miesięcznie', color: zusColors.success };
-    } else {
-      const workBonus = workYears > 0 ? ` + ${workYears * 200}-${workYears * 350} PLN za pracę po emeryturze` : '';
-      return { text: `Znaczące zwiększenie emerytury o ~400+ PLN miesięcznie${workBonus}`, color: zusColors.primary };
-    }
-  };
 
   const getWorkAfterRetirementStatus = () => {
     if (workAfterRetirement === 0) {
@@ -102,92 +85,8 @@ const ZUSAccountPanel = () => {
   };
 
   const balanceStatus = getBalanceStatus();
-  const impact = getEstimatedImpact();
-  const workStatus = getWorkAfterRetirementStatus();
 
-  // Get postponed benefits from backend data
-  const getPostponedBenefitText = () => {
-    const postponedData = state.results?.ifPostponedYears;
-    
 
-    
-    if (!postponedData || postponedData.length === 0) {
-      // Fallback to estimated values
-      return `💰 Szacowane dodatkowe świadczenie: ${workAfterRetirement * 200}-${workAfterRetirement * 350} PLN miesięcznie`;
-    }
-    
-    // Find exact match first
-    const exactMatch = postponedData.find(item => {
-      const itemYears = parseInt(item.year || item.postponedByYears || item.years || 0);
-      return itemYears === workAfterRetirement;
-    });
-    
-    if (exactMatch) {
-      const currentPension = state.results?.actualAmountPLN || 0;
-      const postponedPension = exactMatch.actualAmountPLN || 0;
-      const difference = postponedPension - currentPension;
-      
-      const yearsText = workAfterRetirement === 1 ? 'rok' : workAfterRetirement < 5 ? 'lata' : 'lat';
-      return `💰 Pracując ${workAfterRetirement} ${yearsText} po emeryturze otrzymasz ${Math.round(postponedPension).toLocaleString('pl-PL')} PLN miesięcznie (o ${Math.round(difference)} PLN więcej niż standardowo)`;
-    }
-    
-    // If no exact match, try to interpolate/extrapolate
-    const sortedData = postponedData
-      .map(item => ({
-        years: parseInt(item.year || 0),
-        amount: item.actualAmountPLN || 0
-      }))
-      .sort((a, b) => a.years - b.years);
-    
-    if (sortedData.length >= 2) {
-      const currentPension = state.results?.actualAmountPLN || 0;
-      let estimatedAmount = 0;
-      
-      // Find two closest points for interpolation/extrapolation
-      if (workAfterRetirement <= sortedData[0].years) {
-        // Extrapolate below minimum
-        const point1 = sortedData[0];
-        const point2 = sortedData[1];
-        const slope = (point2.amount - point1.amount) / (point2.years - point1.years);
-        estimatedAmount = point1.amount + slope * (workAfterRetirement - point1.years);
-      } else if (workAfterRetirement >= sortedData[sortedData.length - 1].years) {
-        // Extrapolate above maximum
-        const point1 = sortedData[sortedData.length - 2];
-        const point2 = sortedData[sortedData.length - 1];
-        const slope = (point2.amount - point1.amount) / (point2.years - point1.years);
-        estimatedAmount = point2.amount + slope * (workAfterRetirement - point2.years);
-      } else {
-        // Interpolate between two points
-        for (let i = 0; i < sortedData.length - 1; i++) {
-          const point1 = sortedData[i];
-          const point2 = sortedData[i + 1];
-          
-          if (workAfterRetirement >= point1.years && workAfterRetirement <= point2.years) {
-            const ratio = (workAfterRetirement - point1.years) / (point2.years - point1.years);
-            estimatedAmount = point1.amount + ratio * (point2.amount - point1.amount);
-            break;
-          }
-        }
-      }
-      
-      const difference = Math.round(estimatedAmount - currentPension);
-      const yearsText = workAfterRetirement === 1 ? 'rok' : workAfterRetirement < 5 ? 'lata' : 'lat';
-      return `💰 Szacunkowo: pracując ${workAfterRetirement} ${yearsText} po emeryturze otrzymasz ~${Math.round(estimatedAmount).toLocaleString('pl-PL')} PLN miesięcznie (o ~${difference} PLN więcej)`;
-    }
-    
-    // Fallback: show available options
-    const availableOptions = postponedData.map(item => {
-      const years = parseInt(item.year || 0);
-      const amount = item.actualAmountPLN || 0;
-      const currentPension = state.results?.actualAmountPLN || 0;
-      const difference = Math.round(amount - currentPension);
-      
-      const yearText = years === 1 ? 'rok' : years < 5 ? 'lata' : 'lat';
-      return `${years} ${yearText}: +${difference} PLN`;
-    }).join(', ');
-    
-    return `💰 Dostępne opcje: ${availableOptions}`;
-  };
 
   return (
     <Box sx={{ p: 3 }}>
@@ -259,19 +158,19 @@ const ZUSAccountPanel = () => {
             onChange={handleAccountBalanceChange}
             placeholder="25000"
             helperText="Aktualne środki zgromadzone na Twoim koncie ZUS"
-            InputProps={{
-              startAdornment: <InputAdornment position="start">PLN</InputAdornment>,
-              sx: {
-                borderRadius: 2,
-                '& .MuiOutlinedInput-root': {
-                  '&.Mui-focused fieldset': {
-                    borderColor: zusColors.primary,
-                  }
-                }
+            slotProps={{
+              input: {
+                startAdornment: <InputAdornment position="start">PLN</InputAdornment>,
               }
             }}
             sx={{
               mb: 2,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                '&.Mui-focused fieldset': {
+                  borderColor: zusColors.primary,
+                }
+              },
               '& .MuiFormLabel-root.Mui-focused': {
                 color: zusColors.primary,
               }
@@ -388,99 +287,34 @@ const ZUSAccountPanel = () => {
           {/* Work Status Display */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
             <Chip
-              label={`${workStatus.emoji} ${workStatus.text}`}
+              label={`${getWorkAfterRetirementStatus().emoji} ${getWorkAfterRetirementStatus().text}`}
               sx={{
-                background: `linear-gradient(135deg, ${workStatus.color}15 0%, ${workStatus.color}08 100%)`,
-                color: workStatus.color,
+                background: `linear-gradient(135deg, ${getWorkAfterRetirementStatus().color}15 0%, ${getWorkAfterRetirementStatus().color}08 100%)`,
+                color: getWorkAfterRetirementStatus().color,
                 fontWeight: 600,
-                border: `1px solid ${workStatus.color}30`,
+                border: `1px solid ${getWorkAfterRetirementStatus().color}30`,
               }}
             />
           </Box>
 
-          {workAfterRetirement > 0 && (
-            <Box sx={{ p: 2, borderRadius: 2, background: `${workStatus.color}10` }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <AccessTimeIcon sx={{ color: workStatus.color, fontSize: 20 }} />
-                <Typography variant="body2" sx={{ color: zusColors.dark, fontWeight: 600 }}>
-                  Dodatkowy okres pracy: <strong>{workAfterRetirement} {workAfterRetirement === 1 ? 'rok' : workAfterRetirement < 5 ? 'lata' : 'lat'}</strong>
-                </Typography>
-              </Box>
-
-              <Box sx={{ mb: 1 }}>
-                <Typography variant="body2" sx={{ color: zusColors.dark, fontWeight: 500, mb: 0.5 }}>
-                  {getPostponedBenefitText()}
-                </Typography>
-                <Typography variant="caption" sx={{ color: zusColors.dark, opacity: 0.7 }}>
-                  🎯 Dane z systemu kalkulacji emerytalnej
-                </Typography>
-              </Box>
-            </Box>
-          )}
-
-          {workAfterRetirement === 0 && (
-            <Box sx={{ p: 2, borderRadius: 2, background: `${zusColors.neutral}10` }}>
-              <Typography variant="body2" sx={{ color: zusColors.dark, fontWeight: 500 }}>
-                🏖️ Przejdziesz na emeryturę w standardowym wieku emerytalnym
-              </Typography>
-              <Typography variant="caption" sx={{ color: zusColors.dark, opacity: 0.7 }}>
-                Możesz zawsze zmienić zdanie i pracować dłużej dla wyższej emerytury
-              </Typography>
-            </Box>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Impact Summary */}
-      <Card
-        sx={{
-          borderRadius: 3,
-          background: `linear-gradient(135deg, ${impact.color}08 0%, white 100%)`,
-          border: `1px solid ${impact.color}20`,
-          boxShadow: `0 4px 16px ${impact.color}15`,
-        }}
-      >
-        <CardContent sx={{ p: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: zusColors.dark }}>
-              🎯 Szacowany wpływ na emeryturę
-            </Typography>
-          </Box>
-
-          <Typography
-            variant="body1"
-            sx={{
-              color: impact.color,
-              fontWeight: 600,
-              mb: 2,
-            }}
-          >
-            {impact.text}
-          </Typography>
-
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="body2" sx={{ color: zusColors.dark, opacity: 0.8 }}>
-                Obecne saldo:
-              </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: zusColors.primary }}>
-                {formatCurrency(accountBalance)} PLN
-              </Typography>
-            </Box>
-
-
-          </Box>
-
-          <Box sx={{ mt: 2, p: 2, borderRadius: 2, background: `${impact.color}10` }}>
-            <Typography variant="body2" sx={{ color: zusColors.dark, fontWeight: 500 }}>
-              💡 Wskazówka: Praca po wieku emerytalnym może znacząco zwiększyć Twoją przyszłą emeryturę
+          <Box sx={{ p: 2, borderRadius: 2, background: `${zusColors.info}08`, mt: 2 }}>
+            <Typography variant="body2" sx={{ color: zusColors.dark, fontWeight: 500, mb: 1 }}>
+              {workAfterRetirement > 0 
+                ? `🎯 Wybrano ${workAfterRetirement} ${workAfterRetirement === 1 ? 'rok' : workAfterRetirement < 5 ? 'lata' : 'lat'} dodatkowej pracy`
+                : '🏖️ Przejście na emeryturę w standardowym wieku'
+              }
             </Typography>
             <Typography variant="caption" sx={{ color: zusColors.dark, opacity: 0.7 }}>
-              Każdy rok pracy po emeryturze to około 200-350 PLN więcej emerytury miesięcznie
+              {workAfterRetirement > 0 
+                ? 'Szczegółowe wyniki znajdziesz w sekcji wyników powyżej'
+                : 'Przesuń slider aby zobaczyć korzyści z dłuższej pracy'
+              }
             </Typography>
           </Box>
         </CardContent>
       </Card>
+
+
     </Box>
   );
 };
