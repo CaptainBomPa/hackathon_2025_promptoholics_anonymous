@@ -164,7 +164,27 @@ export default function SimulatorFormPage() {
 
                                     <Stack direction="row" spacing={1.25} sx={{ mt: 2 }}>
                                         <Button variant="outlined" onClick={() => navigate(-1)}>Wstecz</Button>
-                                        <Button variant="contained" onClick={() => navigate('/simulator/additional')} disabled={!valid}>Dalej</Button>
+                                        <Button 
+                                            variant="contained" 
+                                            onClick={() => {
+                                                // Collect basic form data
+                                                const basicFormData = {
+                                                    age: Number(age),
+                                                    gender,
+                                                    wage: Number(wage),
+                                                    startYear: Number(startYear),
+                                                    endYear: Number(endYear),
+                                                    goal: Number(goal),
+                                                }
+                                                
+                                                navigate('/simulator/additional', { 
+                                                    state: { basicFormData } 
+                                                })
+                                            }} 
+                                            disabled={!valid}
+                                        >
+                                            Dalej
+                                        </Button>
                                     </Stack>
                                 </Paper>
                             </Grid>

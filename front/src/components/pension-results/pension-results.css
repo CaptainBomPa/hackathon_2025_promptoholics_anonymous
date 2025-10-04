@@ -1,0 +1,50 @@
+/* Screen reader only styles */
+.sr-only {
+  position: absolute !important;
+  left: -10000px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  clip: rect(1px, 1px, 1px, 1px) !important;
+  white-space: nowrap !important;
+}
+
+/* Focus visible styles for better keyboard navigation */
+.pension-card:focus-visible {
+  outline: 2px solid #3F84D2 !important;
+  outline-offset: 2px !important;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .pension-amount-card {
+    border-width: 2px !important;
+  }
+  
+  .pension-amount-text {
+    font-weight: 700 !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .pension-card,
+  .pension-card * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  .pension-results-display {
+    color: black !important;
+    background: white !important;
+  }
+  
+  .pension-amount-card {
+    border: 1px solid black !important;
+    box-shadow: none !important;
+  }
+}

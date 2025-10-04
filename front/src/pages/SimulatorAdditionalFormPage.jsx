@@ -4,12 +4,14 @@ import {
     Box, Container, Typography, Paper, TextField, Button,
     InputAdornment, MenuItem, Stack, Divider, Grid
 } from '@mui/material'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import AppHeader from '../components/common/AppHeader'
 import WizardProgress from '../components/common/WizardProgress'
 
 export default function SimulatorAdditionalFormPage() {
     const navigate = useNavigate()
+    const { state } = useLocation()
+    const basicFormData = state?.basicFormData
 
     const [zusBalance, setZusBalance] = useState()
     const [sickMode, setSickMode] = useState('avg') // 'avg' | 'none' | 'custom'
@@ -158,7 +160,46 @@ export default function SimulatorAdditionalFormPage() {
 
                                     <Stack direction="row" spacing={1.25} sx={{ mt: 2 }}>
                                         <Button variant="outlined" onClick={() => navigate(-1)}>Wstecz</Button>
-                                        <Button variant="contained" onClick={() => navigate('/simulator/result')} disabled={!valid}>
+                                        <Button 
+                                            variant="contained" 
+                                            onClick={() => {
+                                                // Combine basic and additional form data
+                                                const combinedData = {
+                                                    // Basic form data
+                                                    ...basicFormData,
+                                                    // Additional form data
+                                                    zusBalance: zusBalance ? Number(zusBalance) : undefined,
+                                                    sickMode,
+                                                    includeSickLeave: sickMode !== 'none',
+                                                    sickDays: sickMode === 'custom' ? Number(sickDays) : undefined,
+                                                    sickYears: sickMode === 'custom' ? Number(sickYears) : undefined,
+                                                    sickLoss: sickMode === 'custom' ? Number(sickLoss) : undefined,
+                                                }
+                                                
+                                                // Create mock API request/response based on form data
+                                                const mockRequest = {
+                                                    age: combinedData.age,
+                                                    sex: combinedData.gender === 'K' ? 'F' : 'M',
+                                                    grossSalaryPLN: combinedData.wage,
+                                                    startYear: combinedData.startYear,
+                                                    plannedEndYear: combinedData.endYear,
+                                                    expectedPensionPLN: combinedData.goal,
+                                                    includeSickLeave: combinedData.includeSickLeave,
+                                                    zusAccountFundsPLN: combinedData.zusBalance,
+                                                }
+                                                
+                                                // In a real app, you would make an API call here
+                                                // For now, navigate with the form data
+                                                navigate('/simulator/result', { 
+                                                    state: { 
+                                                        request: mockRequest,
+                                                        formData: combinedData,
+                                                        // response will be mocked in the results page
+                                                    } 
+                                                })
+                                            }} 
+                                            disabled={!valid}
+                                        >
                                             Przelicz i pokaż wynik
                                         </Button>
                                     </Stack>
