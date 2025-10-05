@@ -181,7 +181,7 @@ export default function HomePage() {
                                     }}
                                 >
                                     <Typography variant="h3" sx={{ fontWeight: 900, lineHeight: 1.1, mb: 1 }}>
-                                        Jaki poziom emerytury chcesz osiągnąć?
+                                        Jaką kwotę emerytury chcesz otrzymywać?
                                     </Typography>
                                     <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
                                         Wpisz kwotę brutto, którą chciał(a)byś otrzymywać co miesiąc po przejściu na emeryturę.

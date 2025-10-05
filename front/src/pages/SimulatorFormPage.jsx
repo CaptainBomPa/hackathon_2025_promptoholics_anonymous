@@ -163,10 +163,6 @@ export default function SimulatorFormPage() {
                                         />
                                     </Box>
 
-                                    <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                                        Wynagrodzenia historyczne będą odwrotnie indeksowane ścieżką wzrostu płac (opis metodyki w raporcie).
-                                    </Typography>
-
                                     <Stack direction="row" spacing={1.25} sx={{ mt: 2 }}>
                                         <Button variant="outlined" onClick={() => navigate(-1)}>Wstecz</Button>
                                         <Button 
