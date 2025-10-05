@@ -163,8 +163,9 @@ public class CalculationFacadeV3 {
         }
 
         var entity = new PensionCalculationEntity();
+        var id = UUID.randomUUID();
         entity.setPostalCode(req.getPostalCode().orElse(""));
-        entity.setId(UUID.randomUUID());
+        entity.setId(id);
         entity.setAge(req.getAge());
         entity.setActualPension(round2(monthlyPensionNominalActual));
         entity.setExpectedPension(req.getExpectedPensionPLN());
@@ -197,7 +198,7 @@ public class CalculationFacadeV3 {
         result.setSalaryProjection(salaryByYearList);                         // salaryProjection: od currentYear
 
         PensionCalculationResponseDto response = new PensionCalculationResponseDto();
-        response.setId(UUID.randomUUID().toString());
+        response.setId(id.toString());
         response.setRequestedAt(OffsetDateTime.now());
         response.setResult(result);
         return response;
