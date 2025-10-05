@@ -41,7 +41,7 @@ const transformContractType = (workType) => {
     'business': 'B2B',
     'contract': 'UMOWA_O_DZIELO',
   };
-  return mapping[workType] || 'EMPLOYMENT_CONTRACT';
+  return mapping[workType] || 'UMOWA_O_PRACE';
 };
 
 /**
@@ -213,49 +213,6 @@ export const pensionApiService = {
       
     } catch (error) {
       const errorInfo = handleApiError(error, 'getRandomFact');
-      
-      return {
-        success: false,
-        error: errorInfo,
-        data: null,
-      };
-    }
-  },
-
-  /**
-   * Generate admin usage report (XLS)
-   */
-  async generateAdminReport(dateFrom, dateTo) {
-    try {
-      const response = await apiClient.post(config.endpoints.generateReport, {
-        dateFrom,
-        dateTo,
-      }, {
-        responseType: 'blob', // Important for binary data
-      });
-      
-      // Create blob URL for download
-      const blob = new Blob([response.data], { 
-        type: 'application/vnd.ms-excel' 
-      });
-      const url = window.URL.createObjectURL(blob);
-      
-      // Generate filename with current date
-      const now = new Date();
-      const dateStr = now.toISOString().split('T')[0];
-      const filename = `raport-uzytkownikow_${dateFrom}_${dateTo}_${dateStr}.xls`;
-      
-      return {
-        success: true,
-        data: {
-          blob,
-          url,
-          filename,
-        },
-      };
-      
-    } catch (error) {
-      const errorInfo = handleApiError(error, 'generateAdminReport');
       
       return {
         success: false,
