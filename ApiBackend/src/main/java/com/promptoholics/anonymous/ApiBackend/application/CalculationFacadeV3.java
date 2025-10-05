@@ -1,5 +1,6 @@
 package com.promptoholics.anonymous.ApiBackend.application;
 
+import com.promptoholics.anonymous.ApiBackend.domain.PensionCalculationEntity;
 import com.promptoholics.anonymous.ApiBackend.domain.PensionCalculationRepository;
 import com.promptoholics.anonymous.ApiBackend.schemas.dtos.*;
 import io.micrometer.common.util.StringUtils;
@@ -160,6 +161,19 @@ public class CalculationFacadeV3 {
         } else {
             meets.setIsMet(null);
         }
+
+        var entity = new PensionCalculationEntity();
+        entity.setPostalCode(req.getPostalCode().orElse(""));
+        entity.setId(UUID.randomUUID());
+        entity.setAge(req.getAge());
+        entity.setActualPension(round2(monthlyPensionNominalActual));
+        entity.setExpectedPension(req.getExpectedPensionPLN());
+        entity.setGender(req.getSex().getValue());
+        entity.setAccumulatedFundsTotal(Double.valueOf(req.getZusAccountFundsPLN().orElse((float) 0)));
+        entity.setIncludedSicknessPeriods(req.getIncludeSickLeave());
+        entity.setInflationAdjustedPension(round2(monthlyPensionRealToday));
+        entity.setSalaryAmount(req.getGrossSalaryPLN());
+        pensionCalculationRepository.saveAndFlush(entity);
 
         // Budowa odpowiedzi
         PensionCalculationResponseResultDto result = new PensionCalculationResponseResultDto();
