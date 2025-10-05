@@ -502,119 +502,171 @@ const MetricCard = ({
     );
 };
 
-/** WorkAfterRetirementCard */
 const WorkAfterRetirementCard = ({ workAfterRetirement, postponedData, currentPension, loading }) => {
-  // Get postponed benefits from backend data (same logic as in ZUSAccountPanel)
-  const getPostponedBenefitText = () => {
-    if (!postponedData || postponedData.length === 0) {
-      return `Szacowane dodatkowe świadczenie: ${workAfterRetirement * 200}-${workAfterRetirement * 350} PLN miesięcznie`;
-    }
-    
-    // Find exact match first
-    const exactMatch = postponedData.find(item => {
-      const itemYears = parseInt(item.year || item.postponedByYears || item.years || 0);
-      return itemYears === workAfterRetirement;
-    });
-    
-    if (exactMatch) {
-      const difference = exactMatch.actualAmountPLN - currentPension;
-      const yearsText = workAfterRetirement === 1 ? 'rok' : workAfterRetirement < 5 ? 'lata' : 'lat';
-      return `Pracując ${workAfterRetirement} ${yearsText} po emeryturze otrzymasz ${Math.round(exactMatch.actualAmountPLN).toLocaleString('pl-PL')} PLN miesięcznie (o ${Math.round(difference)} PLN więcej)`;
-    }
-    
-    // Interpolation/extrapolation logic (same as in ZUSAccountPanel)
-    const sortedData = postponedData
-      .map(item => ({
-        years: parseInt(item.year || 0),
-        amount: item.actualAmountPLN || 0
-      }))
-      .sort((a, b) => a.years - b.years);
-    
-    if (sortedData.length >= 2) {
-      let estimatedAmount = 0;
-      
-      if (workAfterRetirement <= sortedData[0].years) {
-        const point1 = sortedData[0];
-        const point2 = sortedData[1];
-        const slope = (point2.amount - point1.amount) / (point2.years - point1.years);
-        estimatedAmount = point1.amount + slope * (workAfterRetirement - point1.years);
-      } else if (workAfterRetirement >= sortedData[sortedData.length - 1].years) {
-        const point1 = sortedData[sortedData.length - 2];
-        const point2 = sortedData[sortedData.length - 1];
-        const slope = (point2.amount - point1.amount) / (point2.years - point1.years);
-        estimatedAmount = point2.amount + slope * (workAfterRetirement - point2.years);
-      } else {
-        for (let i = 0; i < sortedData.length - 1; i++) {
-          const point1 = sortedData[i];
-          const point2 = sortedData[i + 1];
-          
-          if (workAfterRetirement >= point1.years && workAfterRetirement <= point2.years) {
-            const ratio = (workAfterRetirement - point1.years) / (point2.years - point1.years);
-            estimatedAmount = point1.amount + ratio * (point2.amount - point1.amount);
-            break;
-          }
+    const yearsText = workAfterRetirement === 1 ? 'rok' : workAfterRetirement < 5 ? 'lata' : 'lat';
+
+    // === Estymacja kwoty po odroczeniu (exact match → interpolacja/ekstrapolacja → fallback) ===
+    const estimateAmount = () => {
+        if (!postponedData || postponedData.length === 0) {
+            const mid = workAfterRetirement * ((200 + 350) / 2);
+            return Math.max((currentPension || 0) + mid, 0);
         }
-      }
-      
-      const difference = Math.round(estimatedAmount - currentPension);
-      const yearsText = workAfterRetirement === 1 ? 'rok' : workAfterRetirement < 5 ? 'lata' : 'lat';
-      return `Szacunkowo: pracując ${workAfterRetirement} ${yearsText} po emeryturze otrzymasz ~${Math.round(estimatedAmount).toLocaleString('pl-PL')} PLN miesięcznie (o ~${difference} PLN więcej)`;
-    }
-    
-    return `Szacowane dodatkowe świadczenie: ${workAfterRetirement * 200}-${workAfterRetirement * 350} PLN miesięcznie`;
-  };
 
-  const yearsText = workAfterRetirement === 1 ? 'rok' : workAfterRetirement < 5 ? 'lata' : 'lat';
+        const exact = postponedData.find(item => {
+            const y = parseInt(item.year || item.postponedByYears || item.years || 0, 10);
+            return y === workAfterRetirement;
+        });
+        if (exact) return exact.actualAmountPLN || 0;
 
-  return (
-    <Box sx={{ mt: 4 }}>
-      <Paper
-        elevation={0}
-        sx={{
-          p: 4,
-          borderRadius: 3,
-          background: `linear-gradient(180deg, ${zusColors.secondary}10 0%, #fff 55%)`,
-          border: `1px solid ${zusColors.secondary}24`,
-          boxShadow: `0 8px 28px ${zusColors.secondary}1f`,
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-          <Box
-            sx={{
-              p: 1,
-              borderRadius: 2,
-              background: `linear-gradient(135deg, ${zusColors.secondary} 0%, ${zusColors.primary} 100%)`,
-              boxShadow: `0 4px 12px ${zusColors.secondary}30`,
-            }}
-          >
-            <Work sx={{ color: 'white', fontSize: 24 }} />
-          </Box>
-          <Typography variant="h6" sx={{ fontWeight: 600, color: zusColors.dark }}>
-            💼 Praca po wieku emerytalnym
-          </Typography>
+        const sorted = postponedData
+            .map(item => ({
+                years: parseInt(item.year || item.postponedByYears || item.years || 0, 10),
+                amount: item.actualAmountPLN || 0,
+            }))
+            .sort((a, b) => a.years - b.years);
+
+        if (sorted.length >= 2) {
+            const first = sorted[0];
+            const last = sorted[sorted.length - 1];
+
+            if (workAfterRetirement <= first.years) {
+                const p1 = sorted[0], p2 = sorted[1];
+                const slope = (p2.amount - p1.amount) / ((p2.years - p1.years) || 1);
+                return p1.amount + slope * (workAfterRetirement - p1.years);
+            }
+            if (workAfterRetirement >= last.years) {
+                const p1 = sorted[sorted.length - 2], p2 = last;
+                const slope = (p2.amount - p1.amount) / ((p2.years - p1.years) || 1);
+                return p2.amount + slope * (workAfterRetirement - p2.years);
+            }
+            for (let i = 0; i < sorted.length - 1; i++) {
+                const p1 = sorted[i], p2 = sorted[i + 1];
+                if (workAfterRetirement >= p1.years && workAfterRetirement <= p2.years) {
+                    const ratio = (workAfterRetirement - p1.years) / ((p2.years - p1.years) || 1);
+                    return p1.amount + ratio * (p2.amount - p1.amount);
+                }
+            }
+        }
+
+        const mid = workAfterRetirement * ((200 + 350) / 2);
+        return Math.max((currentPension || 0) + mid, 0);
+    };
+
+    const estimatedAmount = Math.max(Math.round(estimateAmount()), 0);
+    const diff = Math.max(Math.round(estimatedAmount - (currentPension || 0)), 0);
+    const percent = Math.max(
+        Math.round(((estimatedAmount - (currentPension || 0)) / ((currentPension || 0) || 1)) * 100),
+        0
+    );
+    const progressValue = Math.min(percent, 100); // pasek pokazuje do 100%
+
+    return (
+        <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+            <Paper
+                elevation={0}
+                sx={{
+                    width: '45%',
+                    maxWidth: 780,
+                    p: 3,
+                    borderRadius: 1,
+                    bgcolor: '#fff',
+                    border: '1px solid rgba(0,0,0,0.06)',
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.06)',
+                }}
+            >
+                {/* Nagłówek */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                    {/* Solid badge bez gradientu */}
+                    <Box
+                        sx={{
+                            width: 44,
+                            height: 44,
+                            borderRadius: 2,
+                            display: 'grid',
+                            placeItems: 'center',
+                            bgcolor: zusColors.primary,
+                            color: '#fff',
+                            boxShadow: `0 6px 18px ${zusColors.primary}44`,
+                            flexShrink: 0,
+                        }}
+                    >
+                        <Work sx={{ fontSize: 24 }} />
+                    </Box>
+
+                    <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 800, color: zusColors.dark, lineHeight: 1.1 }}>
+                            Praca po wieku emerytalnym
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: `${zusColors.dark}99` }}>
+                            Dodatkowy okres pracy: <b>{workAfterRetirement} {yearsText}</b>
+                        </Typography>
+                    </Box>
+
+                    {/* Procent – mała pastylka */}
+                    {!loading && (
+                        <Box
+                            sx={{
+                                ml: 'auto',
+                                px: 1.25,
+                                py: 0.5,
+                                borderRadius: 999,
+                                fontSize: 12,
+                                fontWeight: 800,
+                                bgcolor: `${zusColors.success}15`,
+                                color: zusColors.success,
+                                border: `1px solid ${zusColors.success}33`,
+                                whiteSpace: 'nowrap',
+                            }}
+                        >
+                            +{percent}% vs obecnie
+                        </Box>
+                    )}
+                </Box>
+
+                {/* Treść */}
+                {loading ? (
+                    <Box>
+                        <Skeleton variant="text" width="60%" height={36} sx={{ mb: 1 }} />
+                        <Skeleton variant="rounded" height={10} />
+                    </Box>
+                ) : (
+                    <Box>
+                        {/* Dwa kafelki metryk */}
+                        <Box
+
+                        >
+
+                            <Box
+                                sx={{
+                                    p: 2,
+                                    borderRadius: 2,
+                                    border: "0px",
+                                    bgcolor: '#fff',
+                                }}
+                            >
+                                <Typography variant="caption" sx={{ color: `${zusColors.dark}99`, fontWeight: 700 }}>
+                                    Wzrost względem obecnej
+                                </Typography>
+                                <Typography
+                                    variant="h5"
+                                    sx={{
+                                        mt: 0.5,
+                                        fontWeight: 900,
+                                        color: zusColors.primary,
+                                        lineHeight: 1.15,
+                                    }}
+                                >
+                                    +{diff.toLocaleString('pl-PL')} PLN / mies.
+                                </Typography>
+
+                            </Box>
+                        </Box>
+                    </Box>
+                )}
+            </Paper>
         </Box>
-
-        {loading ? (
-          <Box>
-            <Skeleton variant="text" width="80%" height={32} sx={{ mb: 1 }} />
-            <Skeleton variant="text" width="60%" height={24} />
-          </Box>
-        ) : (
-          <Box>
-            <Typography variant="h6" sx={{ color: zusColors.secondary, fontWeight: 600, mb: 1 }}>
-              Dodatkowy okres pracy: {workAfterRetirement} {yearsText}
-            </Typography>
-            <Typography variant="body1" sx={{ color: zusColors.dark, fontWeight: 500, mb: 2 }}>
-              {getPostponedBenefitText()}
-            </Typography>
-            <Typography variant="body2" sx={{ color: zusColors.dark, opacity: 0.7 }}>
-              🎯 Dane z systemu kalkulacji emerytalnej - każdy rok pracy po emeryturze znacząco zwiększa wysokość świadczenia
-            </Typography>
-          </Box>
-        )}
-      </Paper>
-    </Box>
-  );
+    );
 };
+
 
 export default DashboardMainContent;
