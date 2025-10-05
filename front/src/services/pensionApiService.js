@@ -275,6 +275,41 @@ export const pensionApiService = {
       };
     }
   },
+  
+  /**
+   * Get admin report data (JSON)
+   */
+  async getAdminReportData(dateFrom, dateTo) {
+    try {
+      if (config.enableDebug) {
+        console.log('📊 Fetching admin report data from', dateFrom, 'to', dateTo);
+      }
+      
+      const response = await apiClient.post(config.endpoints.getReportData, {
+        dateFrom,
+        dateTo
+      });
+      
+      if (config.enableDebug) {
+        console.log('✅ Admin report data fetched successfully:', response.data);
+      }
+      
+      return {
+        success: true,
+        data: response.data,
+        duration: response.duration,
+      };
+      
+    } catch (error) {
+      const errorInfo = handleApiError(error, 'getAdminReportData');
+      
+      return {
+        success: false,
+        error: errorInfo,
+        data: null,
+      };
+    }
+  },
 };
 
 export default pensionApiService;

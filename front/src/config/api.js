@@ -27,7 +27,8 @@ const config = {
     randomFact: '/facts/random',
     
     // Admin
-    generateReport: '/admin/reports',
+    generateReport: '/admin/reports/xls',
+    getReportData: '/admin/reports/json',
   },
   
   // Default headers

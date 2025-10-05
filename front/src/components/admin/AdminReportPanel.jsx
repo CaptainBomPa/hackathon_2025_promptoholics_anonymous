@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -39,51 +39,41 @@ const AdminReportPanel = () => {
   const [dateFrom, setDateFrom] = useState(new Date(new Date().getFullYear(), 0, 1)); // Start of year
   const [dateTo, setDateTo] = useState(new Date()); // Today
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [reportData, setReportData] = useState([]);
 
-  // Mock data for preview - in real app this would come from API
-  const [mockData] = useState([
-    {
-      date: '2025-01-05',
-      time: '11:20',
-      expectedPension: 5200,
-      age: 33,
-      gender: 'F',
-      salary: 9200,
-      sickLeave: true,
-      zusAccount: 120000,
-      actualPension: 6450,
-      realPension: 5545,
-      postalCode: '02-326',
-    },
-    {
-      date: '2025-01-04',
-      time: '15:02',
-      expectedPension: 4500,
-      age: 41,
-      gender: 'M',
-      salary: 7800,
-      sickLeave: false,
-      zusAccount: null,
-      actualPension: 4980,
-      realPension: 4280,
-      postalCode: null,
-    },
-    {
-      date: '2025-01-03',
-      time: '09:47',
-      expectedPension: 6000,
-      age: 28,
-      gender: 'F',
-      salary: 12500,
-      sickLeave: true,
-      zusAccount: 80000,
-      actualPension: 7250,
-      realPension: 6235,
-      postalCode: '31-559',
-    },
-  ]);
+  // Load data on component mount and when date range changes
+  const loadReportData = async () => {
+    try {
+      setLoadingData(true);
+      setError(null);
+
+      const result = await pensionApiService.getAdminReportData(
+        dateFrom.toISOString().split('T')[0],
+        dateTo.toISOString().split('T')[0]
+      );
+
+      if (result.success) {
+        setReportData(result.data || []);
+      } else {
+        setError(result.error?.userMessage || 'Błąd podczas pobierania danych');
+        setReportData([]);
+      }
+    } catch (err) {
+      console.error('Load data error:', err);
+      setError('Wystąpił nieoczekiwany błąd podczas pobierania danych');
+      setReportData([]);
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  // Load data on mount and when dates change
+  useEffect(() => {
+    loadReportData();
+  }, [dateFrom, dateTo]);
 
   const handleExportReport = async () => {
     try {
@@ -150,11 +140,13 @@ const AdminReportPanel = () => {
   );
 
   // Calculate summary statistics
-  const totalSimulations = mockData.length;
-  const withSickLeave = mockData.filter(item => item.sickLeave).length;
-  const sickLeavePercentage = Math.round((withSickLeave / totalSimulations) * 100);
-  const medianSalary = mockData.map(item => item.salary).sort((a, b) => a - b)[Math.floor(mockData.length / 2)];
-  const medianExpected = mockData.map(item => item.expectedPension).sort((a, b) => a - b)[Math.floor(mockData.length / 2)];
+  const totalSimulations = reportData.length;
+  const withSickLeave = reportData.filter(item => item.sickLeave).length;
+  const sickLeavePercentage = totalSimulations > 0 ? Math.round((withSickLeave / totalSimulations) * 100) : 0;
+  const salaries = reportData.map(item => item.salary).filter(s => s != null).sort((a, b) => a - b);
+  const expectedPensions = reportData.map(item => item.expectedPension).filter(p => p != null).sort((a, b) => a - b);
+  const medianSalary = salaries.length > 0 ? salaries[Math.floor(salaries.length / 2)] : 0;
+  const medianExpected = expectedPensions.length > 0 ? expectedPensions[Math.floor(expectedPensions.length / 2)] : 0;
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={pl}>
@@ -255,15 +247,18 @@ const AdminReportPanel = () => {
                 startIcon={<FilterListIcon />}
                 variant="outlined"
                 size="medium"
+                disabled={loadingData}
               >
                 Filtruj
               </Button>
               <Button
-                startIcon={<RefreshIcon />}
+                startIcon={loadingData ? <CircularProgress size={20} /> : <RefreshIcon />}
+                onClick={loadReportData}
                 variant="outlined"
                 size="medium"
+                disabled={loadingData}
               >
-                Odśwież
+                {loadingData ? 'Ładuję...' : 'Odśwież'}
               </Button>
               <Button
                 startIcon={loading ? <CircularProgress size={20} /> : <FileDownloadIcon />}
@@ -315,41 +310,56 @@ const AdminReportPanel = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {mockData.map((row, index) => (
-                <TableRow
-                  key={index}
-                  sx={{
-                    '&:nth-of-type(odd)': {
-                      backgroundColor: zusColors.neutral + '05',
-                    },
-                    '&:hover': {
-                      backgroundColor: zusColors.primary + '08',
-                    },
-                  }}
-                >
-                  <TableCell>{row.date}</TableCell>
-                  <TableCell>{row.time}</TableCell>
-                  <TableCell sx={{ fontFamily: 'monospace' }}>
-                    {formatCurrency(row.expectedPension)}
+              {loadingData ? (
+                <TableRow>
+                  <TableCell colSpan={11} sx={{ textAlign: 'center', py: 4 }}>
+                    <CircularProgress size={24} sx={{ mr: 2 }} />
+                    Ładowanie danych...
                   </TableCell>
-                  <TableCell sx={{ fontFamily: 'monospace' }}>{row.age}</TableCell>
-                  <TableCell>{getGenderChip(row.gender)}</TableCell>
-                  <TableCell sx={{ fontFamily: 'monospace' }}>
-                    {formatCurrency(row.salary)}
-                  </TableCell>
-                  <TableCell>{getSickLeaveChip(row.sickLeave)}</TableCell>
-                  <TableCell sx={{ fontFamily: 'monospace' }}>
-                    {formatCurrency(row.zusAccount)}
-                  </TableCell>
-                  <TableCell sx={{ fontFamily: 'monospace' }}>
-                    {formatCurrency(row.actualPension)}
-                  </TableCell>
-                  <TableCell sx={{ fontFamily: 'monospace' }}>
-                    {formatCurrency(row.realPension)}
-                  </TableCell>
-                  <TableCell>{row.postalCode || '—'}</TableCell>
                 </TableRow>
-              ))}
+              ) : reportData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={11} sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
+                    Brak danych dla wybranego okresu
+                  </TableCell>
+                </TableRow>
+              ) : (
+                reportData.map((row, index) => (
+                  <TableRow
+                    key={index}
+                    sx={{
+                      '&:nth-of-type(odd)': {
+                        backgroundColor: zusColors.neutral + '05',
+                      },
+                      '&:hover': {
+                        backgroundColor: zusColors.primary + '08',
+                      },
+                    }}
+                  >
+                    <TableCell>{row.date}</TableCell>
+                    <TableCell>{row.time}</TableCell>
+                    <TableCell sx={{ fontFamily: 'monospace' }}>
+                      {formatCurrency(row.expectedPension)}
+                    </TableCell>
+                    <TableCell sx={{ fontFamily: 'monospace' }}>{row.age}</TableCell>
+                    <TableCell>{getGenderChip(row.gender)}</TableCell>
+                    <TableCell sx={{ fontFamily: 'monospace' }}>
+                      {formatCurrency(row.salary)}
+                    </TableCell>
+                    <TableCell>{getSickLeaveChip(row.sickLeave)}</TableCell>
+                    <TableCell sx={{ fontFamily: 'monospace' }}>
+                      {formatCurrency(row.zusAccount)}
+                    </TableCell>
+                    <TableCell sx={{ fontFamily: 'monospace' }}>
+                      {formatCurrency(row.actualPension)}
+                    </TableCell>
+                    <TableCell sx={{ fontFamily: 'monospace' }}>
+                      {formatCurrency(row.realPension)}
+                    </TableCell>
+                    <TableCell>{row.postalCode || '—'}</TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>
@@ -357,7 +367,7 @@ const AdminReportPanel = () => {
         {/* Footer */}
         <Box sx={{ mt: 3, textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
-            Wyświetlono {mockData.length} rekordów • Strona 1 z 1
+            {loadingData ? 'Ładowanie...' : `Wyświetlono ${reportData.length} rekordów • Strona 1 z 1`}
           </Typography>
         </Box>
       </Container>
