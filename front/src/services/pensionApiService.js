@@ -19,11 +19,11 @@ const transformToApiRequest = (formData) => {
 
     // Optional fields
     expectedPensionPLN: formData.expectedPension ? parseFloat(formData.expectedPension) : undefined,
-    includeSickLeave: formData.sickLeave?.mode === 'averaged' || false,
+    includeSickLeave: formData.sickLeave?.mode === 'averaged' || formData.sickLeave?.mode === 'custom' || false,
     zusAccountFundsPLN: formData.zusAccountBalance ? parseFloat(formData.zusAccountBalance) : undefined,
     postalCode: formData.postalCode || null,
     additionalWorkYears: formData.workAfterRetirement ? parseInt(formData.workAfterRetirement) : undefined,
-    additionalSickLeaveDaysPerYear: formData.sickLeave?.customDays ? parseInt(formData.sickLeave.customDays) : undefined,
+    additionalSickLeaveDaysPerYear: formData.sickLeave?.mode === 'custom' && formData.sickLeave?.customDays ? parseInt(formData.sickLeave.customDays) : undefined,
     contractType: transformContractType(formData.workType),
 
     // Salary timeline changes
