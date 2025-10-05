@@ -104,6 +104,7 @@ export default function HomePage() {
                             <Button size="small" startIcon={<ContrastIcon />} onClick={toggleMode} variant="outlined">Kontrast</Button>
                             <Button size="small" startIcon={<AddIcon />} onClick={incFont} variant="outlined">A+</Button>
                             <Button size="small" startIcon={<RemoveIcon />} onClick={decFont} variant="outlined">A−</Button>
+                            <Button size="small" onClick={() => navigate('/admin')} variant="text" sx={{ color: 'text.secondary' }}>Admin</Button>
                             <Button size="small" startIcon={<PlayArrowIcon />} onClick={startSimulation} variant="contained" disabled={!canGo}>Rozpocznij</Button>
                         </Stack>
                     </Box>

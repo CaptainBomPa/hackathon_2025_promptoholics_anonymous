@@ -81,6 +81,8 @@ const initialState = {
     sidebarCollapsed: false,
     errors: {},
     lastCalculation: null,
+    showPostalCodeDialog: false,
+    lastCalculationId: null,
   },
 };
 
@@ -104,6 +106,8 @@ const DASHBOARD_ACTIONS = {
   LOAD_SCENARIO: 'LOAD_SCENARIO',
   DELETE_SCENARIO: 'DELETE_SCENARIO',
   RESET_TO_INITIAL: 'RESET_TO_INITIAL',
+  SHOW_POSTAL_CODE_DIALOG: 'SHOW_POSTAL_CODE_DIALOG',
+  HIDE_POSTAL_CODE_DIALOG: 'HIDE_POSTAL_CODE_DIALOG',
 };
 
 // Reducer function
@@ -195,7 +199,11 @@ function dashboardReducer(state, action) {
       return {
         ...state,
         results: { ...state.results, ...action.payload },
-        uiState: { ...state.uiState, lastCalculation: new Date().toISOString() },
+        uiState: { 
+          ...state.uiState, 
+          lastCalculation: new Date().toISOString(),
+          lastCalculationId: action.payload.id || null,
+        },
       };
 
     case DASHBOARD_ACTIONS.SET_CALCULATING:
@@ -265,6 +273,18 @@ function dashboardReducer(state, action) {
       return {
         ...initialState,
         scenarios: state.scenarios, // Keep saved scenarios
+      };
+
+    case DASHBOARD_ACTIONS.SHOW_POSTAL_CODE_DIALOG:
+      return {
+        ...state,
+        uiState: { ...state.uiState, showPostalCodeDialog: true },
+      };
+
+    case DASHBOARD_ACTIONS.HIDE_POSTAL_CODE_DIALOG:
+      return {
+        ...state,
+        uiState: { ...state.uiState, showPostalCodeDialog: false },
       };
 
     default:
@@ -355,6 +375,11 @@ export const DashboardProvider = ({ children, initialData = {} }) => {
           dispatch({ type: DASHBOARD_ACTIONS.CLEAR_ERROR, payload: 'calculation' });
           dispatch({ type: DASHBOARD_ACTIONS.SET_CALCULATION_RESULTS, payload: transformedData });
           lastCalculationRef.current = currentParams;
+          
+          // Show postal code dialog after successful calculation (with delay)
+          setTimeout(() => {
+            dispatch({ type: DASHBOARD_ACTIONS.SHOW_POSTAL_CODE_DIALOG });
+          }, 2000); // 2 second delay to let user see results first
           
           console.log('✅ Pension calculation completed:', {
             actualAmount: result.data.actualAmountPLN,
@@ -495,6 +520,14 @@ export const DashboardProvider = ({ children, initialData = {} }) => {
 
     resetToInitial: useCallback(() => {
       dispatch({ type: DASHBOARD_ACTIONS.RESET_TO_INITIAL });
+    }, []),
+
+    showPostalCodeDialog: useCallback(() => {
+      dispatch({ type: DASHBOARD_ACTIONS.SHOW_POSTAL_CODE_DIALOG });
+    }, []),
+
+    hidePostalCodeDialog: useCallback(() => {
+      dispatch({ type: DASHBOARD_ACTIONS.HIDE_POSTAL_CODE_DIALOG });
     }, []),
   };
 

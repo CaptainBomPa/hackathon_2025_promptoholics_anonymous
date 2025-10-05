@@ -1,8 +1,9 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Box, Container, Typography, Alert, Link } from '@mui/material';
-import { DashboardProvider } from '../contexts/DashboardContext';
+import { DashboardProvider, useDashboard } from '../contexts/DashboardContext';
 import { DashboardHeader, DashboardSidebar, DashboardMainContent } from '../components/dashboard';
+import PostalCodeDialog from '../components/common/PostalCodeDialog';
 
 const DashboardPage = () => {
   const { state } = useLocation();
@@ -68,6 +69,7 @@ const DashboardPage = () => {
 
 const DashboardContent = () => {
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
+  const { state, actions } = useDashboard();
   const handleToggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   return (
@@ -97,6 +99,13 @@ const DashboardContent = () => {
             <DashboardMainContent />
           </Box>
         </Box>
+
+        {/* Postal Code Dialog */}
+        <PostalCodeDialog
+          open={state.uiState.showPostalCodeDialog}
+          onClose={actions.hidePostalCodeDialog}
+          calculationId={state.uiState.lastCalculationId}
+        />
       </Box>
   );
 };
