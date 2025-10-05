@@ -1,18 +1,20 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import {
     Box, Container, Typography, Paper, TextField, Button,
-    InputAdornment, Grid, Stack, Divider
+    InputAdornment, Grid, Stack, Divider, CircularProgress, Link
 } from '@mui/material'
 import TimelineIcon from '@mui/icons-material/Timeline'
 import ContrastIcon from '@mui/icons-material/Contrast'
 import AddIcon from '@mui/icons-material/Add'
 import RemoveIcon from '@mui/icons-material/Remove'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
+import RefreshIcon from '@mui/icons-material/Refresh'
 import { useNavigate } from 'react-router-dom'
 import { useUiPrefs } from '../contexts/UiPrefsContext'
 import WizardProgress from "../components/common/WizardProgress"
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar } from 'recharts'
 import occupations from '../data/occupationsPensions.json'
+import pensionApiService from '../services/pensionApiService'
 
 export default function HomePage() {
     const navigate = useNavigate()
@@ -20,6 +22,33 @@ export default function HomePage() {
 
     const [expectedPension, setExpectedPension] = useState('')
     const [error, setError] = useState('')
+
+    // --- Random fact state ---
+    const [fact, setFact] = useState(null)
+    const [factLoading, setFactLoading] = useState(false)
+    const [factError, setFactError] = useState(null)
+
+    const fetchFact = async () => {
+        try {
+            setFactError(null)
+            setFact(null)
+            setFactLoading(true)
+            const res = await pensionApiService.getRandomFact('pl-PL')
+            if (res.success && res.data) {
+                setFact(res.data) // { id, text, source: {name,url}, generatedAt }
+            } else {
+                setFactError('Nie udało się pobrać faktu.')
+            }
+        } catch (e) {
+            setFactError('Wystąpił błąd podczas pobierania faktu.')
+        } finally {
+            setFactLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchFact()
+    }, [])
 
     const validate = (val) => {
         if (val === '' || val === null) return 'Podaj kwotę'
@@ -35,22 +64,15 @@ export default function HomePage() {
         setExpectedPension(val)
         setError(validate(val))
     }
-
     const onBlur = () => setError(validate(expectedPension))
     const canGo = useMemo(() => validate(expectedPension) === '', [expectedPension])
-
     const startSimulation = () => {
         if (!canGo) { setError(validate(expectedPension)); return }
         navigate('/simulator', { state: { expectedPension: Number(expectedPension) } })
     }
 
-    const nf = useMemo(() => new Intl.NumberFormat('pl-PL', {
-        style: 'currency', currency: 'PLN', maximumFractionDigits: 2
-    }), [])
-
-    const chartData = useMemo(() =>
-        occupations.map(o => ({ ...o, avg: (o.female + o.male) / 2 })), [])
-
+    const nf = useMemo(() => new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN', maximumFractionDigits: 2 }), [])
+    const chartData = useMemo(() => occupations.map(o => ({ ...o, avg: (o.female + o.male) / 2 })), [])
     const tooltipContent = ({ active, payload, label }) => {
         if (!active || !payload || !payload.length) return null
         const p = payload[0].payload
@@ -201,20 +223,61 @@ export default function HomePage() {
                                     sx={{
                                         p: { xs: 3, md: 4 },
                                         borderRadius: 1,
+                                        height: '100%',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        justifyContent: 'space-between',
                                         bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(20,24,36,0.70)' : 'rgba(255,255,255,0.85)',
                                         backdropFilter: 'saturate(180%) blur(6px)',
                                         boxShadow: (t) => t.shadows[3]
                                     }}
                                 >
-                                    <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 1 }}>
-                                        CZY WIESZ, ŻE…
-                                    </Typography>
-                                    <Typography variant="h5" sx={{ fontWeight: 900, lineHeight: 1.2, mb: 1.5 }}>
-                                        Wydłużenie aktywności o 2 lata może znacząco zwiększyć świadczenie.
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        To tylko przykład edukacyjny. Szczegółowe wyliczenia zobaczysz w wynikach symulacji dla Twoich danych.
-                                    </Typography>
+                                    <Box>
+                                        <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 1 }}>
+                                            CZY WIESZ, ŻE…
+                                        </Typography>
+
+                                        {factLoading && (
+                                            <Box sx={{ display: 'grid', placeItems: 'center', py: 3 }}>
+                                                <CircularProgress size={28} />
+                                            </Box>
+                                        )}
+
+                                        {!factLoading && factError && (
+                                            <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+                                                {factError}
+                                            </Typography>
+                                        )}
+
+                                        {!factLoading && fact && (
+                                            <>
+                                                <Typography variant="h6" sx={{ fontWeight: 900, lineHeight: 1.3, mt: 1 }}>
+                                                    {fact.text}
+                                                </Typography>
+                                                {fact.source?.name && (
+                                                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                                                        Źródło: {fact.source.url ? (
+                                                        <Link href={fact.source.url} target="_blank" rel="noreferrer">
+                                                            {fact.source.name}
+                                                        </Link>
+                                                    ) : fact.source.name}
+                                                    </Typography>
+                                                )}
+                                            </>
+                                        )}
+                                    </Box>
+
+                                    <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+                                        <Button
+                                            size="small"
+                                            variant="outlined"
+                                            startIcon={<RefreshIcon />}
+                                            onClick={fetchFact}
+                                            disabled={factLoading}
+                                        >
+                                            Losuj inny fakt
+                                        </Button>
+                                    </Stack>
                                 </Paper>
                             </Grid>
                         </Grid>
