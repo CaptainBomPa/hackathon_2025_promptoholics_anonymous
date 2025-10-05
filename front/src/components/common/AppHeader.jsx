@@ -36,18 +36,16 @@ export default function AppHeader({ canGo = true, onStart }) {
                 >
                     <Stack direction="row" spacing={1.25} alignItems="center">
                         <Box
+                            component="img"
+                            src="/zus-logo.png"        // plik w public/
+                            alt="ZUS logo"
                             sx={{
-                                width: 32,
-                                height: 32,
-                                borderRadius: 2,
-                                display: 'grid',
-                                placeItems: 'center',
-                                bgcolor: (t) => t.palette.success.main + '22',
-                                color: 'success.main'
+                                width: 64,
+                                height: 64,
+                                objectFit: 'cover',
+                                borderRadius: 1,
                             }}
-                        >
-                            <TimelineIcon fontSize="small" />
-                        </Box>
+                        />
                         <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
                             ZUS • Symulator emerytalny
                         </Typography>
