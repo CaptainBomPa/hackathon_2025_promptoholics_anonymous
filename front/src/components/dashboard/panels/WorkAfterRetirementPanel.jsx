@@ -1,151 +1,128 @@
-import { useState } from 'react';
-import {
-    Box,
-    Typography,
-    Card,
-    CardContent,
-    Chip,
-    Slider,
-} from '@mui/material';
-import { Work as WorkIcon } from '@mui/icons-material';
+import { useState, useMemo } from 'react';
+import { Box, Typography, Card, CardContent, Slider } from '@mui/material';
 import { useDashboard } from '../../../contexts/DashboardContext';
 import { zusColors } from '../../../constants/zus-colors';
 
-/**
- * Work After Retirement Panel
- * Manages years of working after statutory retirement age
- */
 const WorkAfterRetirementPanel = () => {
     const { state, actions } = useDashboard();
     const { zusAccount } = state.parameters;
 
     const [workAfterRetirement, setWorkAfterRetirement] = useState(
-        zusAccount?.workAfterRetirement || 0
+        zusAccount?.workAfterRetirement ?? 0
     );
 
-    const handleWorkAfterRetirementChange = (_, newValue) => {
+    const handleWorkAfterRetirementChange = (_event, newValue) => {
         setWorkAfterRetirement(newValue);
-        actions.updateZUSAccountParameters({
-            workAfterRetirement: newValue,
-        });
+        actions.updateZUSAccountParameters({ workAfterRetirement: newValue });
     };
 
-    const getWorkAfterRetirementStatus = () => {
-        if (workAfterRetirement === 0) {
-            return { text: 'Przejście na emeryturę w wieku emerytalnym', color: zusColors.neutral, emoji: '🏖️' };
-        } else if (workAfterRetirement <= 2) {
-            return { text: 'Krótkoterminowa praca po emeryturze', color: zusColors.info, emoji: '💼' };
-        } else if (workAfterRetirement <= 5) {
-            return { text: 'Średnioterminowa praca po emeryturze', color: zusColors.secondary, emoji: '🚀' };
-        } else {
-            return { text: 'Długoterminowa praca po emeryturze', color: zusColors.success, emoji: '💪' };
-        }
-    };
+    const marks = useMemo(
+        () =>
+            Array.from({ length: 11 }, (_, i) => ({
+                value: i,
+                label: [0, 5, 10].includes(i) ? `${i} lat` : '',
+            })),
+        []
+    );
+
+    const valueLabelFormat = (value) =>
+        `${value} ${value === 1 ? 'rok' : value < 5 ? 'lata' : 'lat'}`;
 
     return (
         <Box sx={{ p: 3 }}>
-
-            {/* Slider Card */}
             <Card
                 sx={{
                     mb: 3,
-                    borderRadius: 3,
-                    background: `linear-gradient(135deg, ${zusColors.secondary}05 0%, white 100%)`,
-                    border: `1px solid ${zusColors.secondary}15`,
-                    boxShadow: `0 4px 16px ${zusColors.secondary}10`,
+                    borderRadius: 1,
+                    background: `linear-gradient(135deg, ${zusColors.success}08 0%, #fff 100%)`,
+                    border: `1px solid ${zusColors.success}20`,
+                    boxShadow: `0 6px 20px ${zusColors.success}14`,
                 }}
             >
                 <CardContent sx={{ p: 3 }}>
-                    <Typography variant="body2" sx={{ color: zusColors.dark, opacity: 0.8, mb: 3 }}>
-                        🚀 Wybierz ile lat chcesz pracować po osiągnięciu wieku emerytalnego.
-                        Praca po emeryturze może znacząco zwiększyć wysokość świadczenia.
+                    <Typography
+                        variant="body2"
+                        sx={{ color: zusColors.dark, opacity: 0.85, mb: 3, fontWeight: 500 }}
+                    >
+                        🚀 Wybierz liczbę lat pracy po osiągnięciu wieku emerytalnego. Suwak działa skokowo (co 1 rok).
                     </Typography>
 
-                    <Box sx={{ px: 2, mb: 3 }}>
+                    <Box sx={{ px: 1, mb: 1, display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="caption" sx={{ opacity: 0.7 }}>Minimalnie</Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.7 }}>Maksymalnie</Typography>
+                    </Box>
+
+                    <Box sx={{ px: 1, mb: 3 }}>
                         <Slider
+                            aria-label="Lata pracy po emeryturze"
                             value={workAfterRetirement}
                             onChange={handleWorkAfterRetirementChange}
                             min={0}
                             max={10}
                             step={1}
-                            marks={[
-                                { value: 0, label: '0 lat' },
-                                { value: 2, label: '2 lata' },
-                                { value: 5, label: '5 lat' },
-                                { value: 10, label: '10 lat' },
-                            ]}
+                            marks={marks}
                             valueLabelDisplay="on"
-                            valueLabelFormat={(value) => `${value} ${value === 1 ? 'rok' : value < 5 ? 'lata' : 'lat'}`}
+                            valueLabelFormat={valueLabelFormat}
                             sx={{
-                                color: zusColors.secondary,
-                                height: 8,
+                                height: 10,
+                                '& .MuiSlider-rail': {
+                                    opacity: 1,
+                                    backgroundColor: `${zusColors.neutral}40`,
+                                    borderRadius: 999,
+                                },
                                 '& .MuiSlider-track': {
-                                    background: `linear-gradient(90deg, ${zusColors.secondary} 0%, ${zusColors.primary} 100%)`,
                                     border: 'none',
+                                    backgroundColor: zusColors.success,
+                                    borderRadius: 999,
                                 },
                                 '& .MuiSlider-thumb': {
-                                    height: 24,
-                                    width: 24,
-                                    background: `linear-gradient(135deg, ${zusColors.secondary} 0%, ${zusColors.primary} 100%)`,
-                                    border: `3px solid white`,
-                                    boxShadow: `0 4px 12px ${zusColors.secondary}40`,
-                                    '&:focus, &:hover, &.Mui-active, &.Mui-focusVisible': {
-                                        boxShadow: `0 6px 16px ${zusColors.secondary}50`,
-                                        transform: 'scale(1.1)',
+                                    height: 26,
+                                    width: 26,
+                                    backgroundColor: '#fff',
+                                    border: `4px solid ${zusColors.success}`,
+                                    boxShadow: `0 6px 14px ${zusColors.success}40`,
+                                    position: 'absolute',
+                                    top: '50% !important',
+                                    marginTop: '0 !important',
+                                    transform: 'translate(-50%, -50%) !important',
+                                    transformOrigin: 'center center',
+                                    transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
+                                    '&:hover, &.Mui-focusVisible, &.Mui-active': {
+                                        borderColor: zusColors.success,
+                                        boxShadow: `0 8px 18px ${zusColors.success}60`,
                                     },
                                     '&::before': { display: 'none' },
                                 },
-                                '& .MuiSlider-valueLabel': {
-                                    background: `linear-gradient(135deg, ${zusColors.secondary} 0%, ${zusColors.primary} 100%)`,
-                                    color: 'white',
-                                    fontWeight: 600,
-                                    fontSize: '0.875rem',
-                                    '&::before': { borderTopColor: zusColors.secondary },
-                                },
                                 '& .MuiSlider-mark': {
-                                    backgroundColor: `${zusColors.secondary}60`,
-                                    height: 4,
-                                    width: 4,
+                                    width: 3,
+                                    height: 3,
                                     borderRadius: '50%',
+                                    backgroundColor: `${zusColors.success}70`,
                                 },
                                 '& .MuiSlider-markActive': {
-                                    backgroundColor: zusColors.secondary,
+                                    backgroundColor: zusColors.success,
                                 },
                                 '& .MuiSlider-markLabel': {
                                     color: zusColors.dark,
-                                    fontWeight: 500,
-                                    fontSize: '0.75rem',
-                                    opacity: 0.8,
+                                    fontWeight: 600,
+                                    opacity: 0.75,
+                                },
+                                '& .MuiSlider-valueLabel': {
+                                    top: -40,
+                                    borderRadius: 8,
+                                    padding: '4px 8px',
+                                    fontWeight: 700,
+                                    backgroundColor: zusColors.success,
+                                    '&::before': { display: 'none' },
+                                    transform: 'none',
                                 },
                             }}
                         />
                     </Box>
 
-                    {/* Status */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                        <Chip
-                            label={`${getWorkAfterRetirementStatus().emoji} ${getWorkAfterRetirementStatus().text}`}
-                            sx={{
-                                background: `linear-gradient(135deg, ${getWorkAfterRetirementStatus().color}15 0%, ${getWorkAfterRetirementStatus().color}08 100%)`,
-                                color: getWorkAfterRetirementStatus().color,
-                                fontWeight: 600,
-                                border: `1px solid ${getWorkAfterRetirementStatus().color}30`,
-                            }}
-                        />
-                    </Box>
-
-                    <Box sx={{ p: 2, borderRadius: 2, background: `${zusColors.info}08`, mt: 2 }}>
-                        <Typography variant="body2" sx={{ color: zusColors.dark, fontWeight: 500, mb: 1 }}>
-                            {workAfterRetirement > 0
-                                ? `🎯 Wybrano ${workAfterRetirement} ${workAfterRetirement === 1 ? 'rok' : workAfterRetirement < 5 ? 'lata' : 'lat'} dodatkowej pracy`
-                                : '🏖️ Przejście na emeryturę w standardowym wieku'}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: zusColors.dark, opacity: 0.7 }}>
-                            {workAfterRetirement > 0
-                                ? 'Szczegółowe wyniki znajdziesz w sekcji wyników powyżej'
-                                : 'Przesuń slider, aby zobaczyć korzyści z dłuższej pracy'}
-                        </Typography>
-                    </Box>
+                    <Typography variant="caption" sx={{ color: zusColors.dark, opacity: 0.7 }}>
+                        Podgląd wartości masz w dymku nad suwakiem.
+                    </Typography>
                 </CardContent>
             </Card>
         </Box>
