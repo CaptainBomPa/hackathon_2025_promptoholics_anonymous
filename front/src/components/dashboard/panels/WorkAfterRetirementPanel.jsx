@@ -1,7 +1,33 @@
 import { useState, useMemo } from 'react';
-import { Box, Typography, Card, CardContent, Slider } from '@mui/material';
+import { Box, Typography, Card, CardContent, Slider, Tooltip, IconButton, tooltipClasses } from '@mui/material';
+import { styled } from '@mui/material/styles';
+import { Info as InfoIcon } from '@mui/icons-material';
 import { useDashboard } from '../../../contexts/DashboardContext';
 import { zusColors } from '../../../constants/zus-colors';
+
+/** Subtelny tooltip */
+const FancyTooltip = styled(({ className, ...props }) => (
+    <Tooltip arrow placement="top" enterDelay={200} leaveDelay={100} {...props} classes={{ popper: className }} />
+))(({ theme }) => ({
+    [`& .${tooltipClasses.tooltip}`]: {
+        background:
+            theme.palette.mode === 'light'
+                ? 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,248,250,0.98) 100%)'
+                : 'linear-gradient(180deg, rgba(42,42,42,0.98) 0%, rgba(28,28,28,0.98) 100%)',
+        color: theme.palette.text.primary,
+        border: `1px solid ${theme.palette.divider}`,
+        boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+        borderRadius: 8,
+        padding: '10px 12px',
+        backdropFilter: 'blur(4px)',
+    },
+    [`& .${tooltipClasses.arrow}`]: {
+        color:
+            theme.palette.mode === 'light'
+                ? 'rgba(255,255,255,0.98)'
+                : 'rgba(42,42,42,0.98)',
+    },
+}));
 
 const WorkAfterRetirementPanel = () => {
     const { state, actions } = useDashboard();
@@ -32,20 +58,39 @@ const WorkAfterRetirementPanel = () => {
         <Box sx={{ p: 3 }}>
             <Card
                 sx={{
-                    mb: 3,
                     borderRadius: 1,
-                    background: `linear-gradient(135deg, ${zusColors.success}08 0%, #fff 100%)`,
-                    border: `1px solid ${zusColors.success}20`,
-                    boxShadow: `0 6px 20px ${zusColors.success}14`,
+                    background: 'transparent',
+                    border: 'none',
+                    boxShadow: 'none',
                 }}
             >
                 <CardContent sx={{ p: 3 }}>
-                    <Typography
-                        variant="body2"
-                        sx={{ color: zusColors.dark, opacity: 0.85, mb: 3, fontWeight: 500 }}
-                    >
-                        🚀 Wybierz liczbę lat pracy po osiągnięciu wieku emerytalnego. Suwak działa skokowo (co 1 rok).
-                    </Typography>
+                    {/* 🔹 Nagłówek z tooltipem */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+                        <Typography
+                            variant="subtitle1"
+                            sx={{ fontWeight: 700 }}
+                        >
+                            Praca po emeryturze
+                        </Typography>
+                        <FancyTooltip
+                            title={
+                                <Box>
+                                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                        Dlaczego to ważne?
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        Każdy dodatkowy rok pracy po osiągnięciu wieku emerytalnego zwiększa Twoje świadczenie.
+                                        Suwak pozwala wybrać liczbę lat dodatkowej aktywności zawodowej (od 0 do 10).
+                                    </Typography>
+                                </Box>
+                            }
+                        >
+                            <IconButton size="small">
+                                <InfoIcon fontSize="small" />
+                            </IconButton>
+                        </FancyTooltip>
+                    </Box>
 
                     <Box sx={{ px: 1, mb: 1, display: 'flex', justifyContent: 'space-between' }}>
                         <Typography variant="caption" sx={{ opacity: 0.7 }}>Minimalnie</Typography>
@@ -119,10 +164,6 @@ const WorkAfterRetirementPanel = () => {
                             }}
                         />
                     </Box>
-
-                    <Typography variant="caption" sx={{ color: zusColors.dark, opacity: 0.7 }}>
-                        Podgląd wartości masz w dymku nad suwakiem.
-                    </Typography>
                 </CardContent>
             </Card>
         </Box>

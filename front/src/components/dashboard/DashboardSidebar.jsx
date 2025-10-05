@@ -128,7 +128,7 @@ const DashboardSidebar = ({ open, onClose }) => {
                                     {panel.id === 'sickLeave' && <SickLeavePanel />}
                                     {panel.id === 'indexation' && <IndexationPanel />}
                                     {panel.id === 'zusAccount' && <ZUSAccountPanel />}
-                                    {panel.id === 'workAfterRetirement' && <WorkAfterRetirementPanel />}{/* ⬅️ render nowego panelu */}
+                                    {panel.id === 'workAfterRetirement' && <WorkAfterRetirementPanel />}
 
                                     {/* Ukryj komunikat „implementacja w toku” dla gotowych paneli */}
                                     {!['basic', 'indexation', 'zusAccount', 'workAfterRetirement'].includes(panel.id) && (
