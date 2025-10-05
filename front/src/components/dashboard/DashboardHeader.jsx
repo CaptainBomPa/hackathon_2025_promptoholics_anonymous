@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Box, Container, Typography, Button, IconButton } from '@mui/material';
-import { Dashboard as DashboardIcon, FileDownload, Menu as MenuIcon, LocationOn as LocationIcon } from '@mui/icons-material';
+import { FileDownload, Menu as MenuIcon, LocationOn as LocationIcon } from '@mui/icons-material';
 import { zusColors } from '../../constants/zus-colors';
 import { useDashboard } from '../../contexts/DashboardContext';
 import jsPDF from 'jspdf';
@@ -14,15 +14,13 @@ const DashboardHeader = ({ onToggleSidebar }) => {
     const handleExport = async () => {
         try {
             setExporting(true);
-            
+
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pageW = pdf.internal.pageSize.getWidth();
             const pageH = pdf.internal.pageSize.getHeight();
             const margin = 15;
-            
-            // Function to handle Polish characters - convert to ASCII equivalents
+
             const addTextWithPolishSupport = (text, x, y, options = {}) => {
-                // Convert Polish characters to ASCII equivalents for PDF compatibility
                 const cleanText = text
                     .replace(/ą/g, 'a').replace(/Ą/g, 'A')
                     .replace(/ć/g, 'c').replace(/Ć/g, 'C')
@@ -33,32 +31,33 @@ const DashboardHeader = ({ onToggleSidebar }) => {
                     .replace(/ś/g, 's').replace(/Ś/g, 'S')
                     .replace(/ź/g, 'z').replace(/Ź/g, 'Z')
                     .replace(/ż/g, 'z').replace(/Ż/g, 'Z');
-                
+
                 pdf.text(cleanText, x, y, options);
             };
-            
-            // Try to use a font that supports Polish characters
+
             try {
                 pdf.setFont('helvetica', 'normal');
             } catch (error) {
                 console.warn('Font setting failed, using default');
             }
-            
-            // Add header with title and generation date
+
             pdf.setFontSize(20);
-            pdf.setTextColor(0, 65, 110); // ZUS dark blue
+            pdf.setTextColor(0, 65, 110);
             addTextWithPolishSupport('Raport Prognozy Emerytury', margin, 25);
-            
+
             pdf.setFontSize(10);
             pdf.setTextColor(100, 100, 100);
             const now = new Date();
-            addTextWithPolishSupport(`Wygenerowano: ${now.toLocaleDateString('pl-PL')} ${now.toLocaleTimeString('pl-PL')}`, margin, 35);
-            
-            // Add parameters summary
+            addTextWithPolishSupport(
+                `Wygenerowano: ${now.toLocaleDateString('pl-PL')} ${now.toLocaleTimeString('pl-PL')}`,
+                margin,
+                35
+            );
+
             pdf.setFontSize(12);
             pdf.setTextColor(0, 0, 0);
             addTextWithPolishSupport('Parametry symulacji:', margin, 50);
-            
+
             pdf.setFontSize(10);
             const params = state.parameters.basic;
             let yPos = 60;
@@ -70,18 +69,17 @@ const DashboardHeader = ({ onToggleSidebar }) => {
                 `Planowany rok zakonczenia: ${params.plannedEndYear}`,
                 `Oczekiwana emerytura: ${params.expectedPension?.toLocaleString('pl-PL')} PLN`,
             ];
-            
+
             paramLines.forEach(line => {
                 addTextWithPolishSupport(line, margin, yPos);
                 yPos += 6;
             });
-            
-            // Add results summary
+
             yPos += 10;
             pdf.setFontSize(12);
             addTextWithPolishSupport('Wyniki prognozy:', margin, yPos);
             yPos += 10;
-            
+
             pdf.setFontSize(10);
             const results = state.results;
             const resultLines = [
@@ -90,41 +88,34 @@ const DashboardHeader = ({ onToggleSidebar }) => {
                 `Stopa zastapienia: ${results.replacementRatePct?.toFixed(1)}%`,
                 `Roznica vs srednia: ${results.vsAverageInRetirementYearPct > 0 ? '+' : ''}${results.vsAverageInRetirementYearPct?.toFixed(1)} p.p.`,
             ];
-            
+
             resultLines.forEach(line => {
                 addTextWithPolishSupport(line, margin, yPos);
                 yPos += 6;
             });
-            
-            // Add charts and visualizations
-            // First add summary section on first page
+
             const summaryEl = document.getElementById('report-summary');
             if (summaryEl) {
-                const canvas = await html2canvas(summaryEl, { 
-                    scale: 2, 
-                    useCORS: true, 
+                const canvas = await html2canvas(summaryEl, {
+                    scale: 2,
+                    useCORS: true,
                     backgroundColor: '#ffffff',
                     logging: false,
                 });
-                
+
                 const imgW = pageW - margin * 2;
                 const ratio = imgW / canvas.width;
                 const imgH = canvas.height * ratio;
                 const startY = Math.max(yPos + 10, 120);
-                
+
                 pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, startY, imgW, imgH);
             }
-            
-            // Add new page for charts
+
             pdf.addPage();
-            
-            // Add both charts on the same page
+
             const chartTargets = ['report-zus-chart', 'report-salary-chart'];
             let currentY = margin;
-            
-            // Debug: log chart data
-            console.log('ZUS Account Growth Data:', state.results.accountGrowthProjection);
-            
+
             for (let i = 0; i < chartTargets.length; i++) {
                 const id = chartTargets[i];
                 const el = document.getElementById(id);
@@ -132,67 +123,58 @@ const DashboardHeader = ({ onToggleSidebar }) => {
                     console.warn(`Chart element not found: ${id}`);
                     continue;
                 }
-                
+
                 try {
-                    console.log(`Capturing chart: ${id}`);
-                    
-                    // Wait longer for chart to fully render
                     await new Promise(resolve => setTimeout(resolve, 1000));
-                    
-                    const canvas = await html2canvas(el, { 
+                    const canvas = await html2canvas(el, {
                         scale: 1.5,
-                        useCORS: true, 
+                        useCORS: true,
                         backgroundColor: '#ffffff',
                         logging: false,
                     });
-                    
+
                     if (canvas.width === 0 || canvas.height === 0) {
                         console.warn(`Chart ${id} has zero dimensions, skipping`);
                         continue;
                     }
-                    
+
                     const imgW = pageW - margin * 2;
                     const ratio = imgW / canvas.width;
                     const imgH = canvas.height * ratio;
-                    
-                    // Calculate available space for each chart (half page minus margins)
-                    const maxChartHeight = (pageH - margin * 3) / 2; // Divide page in half with extra margin
-                    
+                    const maxChartHeight = (pageH - margin * 3) / 2;
+
                     if (imgH > maxChartHeight) {
-                        // If chart is too tall, scale it down to fit
                         const scaledRatio = maxChartHeight / imgH;
                         const scaledW = imgW * scaledRatio;
                         const scaledH = maxChartHeight;
-                        
                         pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin + (imgW - scaledW) / 2, currentY, scaledW, scaledH);
                         currentY += scaledH + 10;
                     } else {
                         pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, currentY, imgW, imgH);
                         currentY += imgH + 10;
                     }
-                    
-                    console.log(`Successfully captured chart: ${id}`);
                 } catch (error) {
                     console.error(`Failed to capture chart ${id}:`, error);
-                    // Continue with next chart instead of failing completely
                 }
             }
-            
-            // Add footer with disclaimer
+
             const totalPages = pdf.internal.getNumberOfPages();
             for (let i = 1; i <= totalPages; i++) {
                 pdf.setPage(i);
                 pdf.setFontSize(8);
                 pdf.setTextColor(100, 100, 100);
-                addTextWithPolishSupport('Raport wygenerowany przez Symulator Emerytalny ZUS - dane maja charakter orientacyjny', margin, pageH - 10);
+                addTextWithPolishSupport(
+                    'Raport wygenerowany przez Symulator Emerytalny ZUS - dane maja charakter orientacyjny',
+                    margin,
+                    pageH - 10
+                );
                 addTextWithPolishSupport(`Strona ${i} z ${totalPages}`, pageW - margin - 20, pageH - 10);
             }
-            
+
             const d = new Date();
             const pad = (n) => String(n).padStart(2, '0');
             const name = `raport-emerytura_${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}.pdf`;
             pdf.save(name);
-            
         } catch (e) {
             console.error('PDF Export Error:', e);
             alert('Nie udało się wygenerować PDF. Spróbuj ponownie.');
@@ -218,8 +200,20 @@ const DashboardHeader = ({ onToggleSidebar }) => {
                         <IconButton onClick={onToggleSidebar} sx={{ display: { xs: 'block', md: 'none' } }} aria-label="Toggle sidebar">
                             <MenuIcon />
                         </IconButton>
+
+                        {/* === LOGO z public/zus-logo.png zamiast ikony === */}
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <DashboardIcon sx={{ color: zusColors.primary, fontSize: 28 }} />
+                            <Box
+                                component="img"
+                                src="/zus-logo.png"        // plik w public/
+                                alt="ZUS logo"
+                                sx={{
+                                    width: 64,
+                                    height: 64,
+                                    objectFit: 'cover',
+                                    borderRadius: 1,
+                                }}
+                            />
                             <Typography variant="h5" sx={{ fontWeight: 600, color: zusColors.primary }}>
                                 Dashboard Symulatora
                             </Typography>
@@ -251,6 +245,7 @@ const DashboardHeader = ({ onToggleSidebar }) => {
                             )}
                             {!state.uiState.isCalculating && state.uiState.lastCalculation && (
                                 <Typography variant="caption" sx={{ color: zusColors.success, fontWeight: 500 }}>
+                                    {/* Ostatnia aktualizacja dostępna w state.uiState.lastCalculation */}
                                 </Typography>
                             )}
                         </Box>
