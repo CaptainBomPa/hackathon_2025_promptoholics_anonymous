@@ -116,6 +116,7 @@ export default function SimulatorFormPage() {
                                                 onChange={(e) => setWage(e.target.value)}
                                                 type="number"
                                                 InputProps={{ endAdornment: plnAdornment }}
+                                                InputLabelProps={{ shrink: true }}
                                                 error={wageError}
                                                 helperText={wageError ? 'Podaj kwotę > 0.' : ' '}
                                                 sx={inputSx}
