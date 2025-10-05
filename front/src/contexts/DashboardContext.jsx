@@ -83,6 +83,7 @@ const initialState = {
     lastCalculation: null,
     showPostalCodeDialog: false,
     lastCalculationId: null,
+    hasShownPostalCodeDialog: false, // Track if dialog was already shown
   },
 };
 
@@ -278,7 +279,11 @@ function dashboardReducer(state, action) {
     case DASHBOARD_ACTIONS.SHOW_POSTAL_CODE_DIALOG:
       return {
         ...state,
-        uiState: { ...state.uiState, showPostalCodeDialog: true },
+        uiState: { 
+          ...state.uiState, 
+          showPostalCodeDialog: true,
+          hasShownPostalCodeDialog: true, // Mark as shown
+        },
       };
 
     case DASHBOARD_ACTIONS.HIDE_POSTAL_CODE_DIALOG:
@@ -376,10 +381,12 @@ export const DashboardProvider = ({ children, initialData = {} }) => {
           dispatch({ type: DASHBOARD_ACTIONS.SET_CALCULATION_RESULTS, payload: transformedData });
           lastCalculationRef.current = currentParams;
           
-          // Show postal code dialog after successful calculation (with delay)
-          setTimeout(() => {
-            dispatch({ type: DASHBOARD_ACTIONS.SHOW_POSTAL_CODE_DIALOG });
-          }, 2000); // 2 second delay to let user see results first
+          // Show postal code dialog only once per session after first successful calculation
+          if (!state.uiState.hasShownPostalCodeDialog) {
+            setTimeout(() => {
+              dispatch({ type: DASHBOARD_ACTIONS.SHOW_POSTAL_CODE_DIALOG });
+            }, 3000); // 3 second delay to let user see results first
+          }
           
           console.log('✅ Pension calculation completed:', {
             actualAmount: result.data.actualAmountPLN,

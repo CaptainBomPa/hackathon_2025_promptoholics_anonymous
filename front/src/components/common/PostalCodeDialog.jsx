@@ -37,6 +37,20 @@ const PostalCodeDialog = ({ open, onClose, calculationId }) => {
       return;
     }
 
+    // Check if we have a valid calculation ID
+    if (!calculationId) {
+      console.warn('No calculation ID available, skipping postal code update');
+      onClose();
+      return;
+    }
+
+    // Check if this is a mock calculation ID
+    if (calculationId.startsWith('mock-')) {
+      console.warn('Mock calculation ID detected, skipping postal code update');
+      onClose();
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);

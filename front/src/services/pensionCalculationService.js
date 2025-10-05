@@ -178,6 +178,8 @@ const calculatePensionMock = (parameters) => {
   const delayBenefits = calculateDelayBenefits(actualAmountPLN);
 
   return {
+    id: `mock-calc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate mock ID
+    requestedAt: new Date().toISOString(),
     actualAmountPLN: Math.round(actualAmountPLN),
     realAmountDeflated: Math.round(realAmountDeflated),
     replacementRatePct: Math.round(replacementRatePct * 10) / 10,
