@@ -21,7 +21,7 @@ public class CalculationFacade {
     private final PensionCalculationRepository pensionCalculationRepository;
 
     // Kalibracja: cel replacement ~25% (możesz dostroić)
-    private static final double EFFECTIVE_PENSION_CONTRIB_RATE = 0.1200; // 12% podstawy składek
+    private static final double EFFECTIVE_PENSION_CONTRIB_RATE = 0.19250; // 12% podstawy składek
     private static final int WORKING_DAYS_PER_YEAR = 252;                // ~dni robocze
 
     // Domyślna liczba dni chorobowych wg płci – dla różnicowania wariantów "Incl" vs "Excl"
@@ -33,7 +33,7 @@ public class CalculationFacade {
     private static final double AVG_PENSION_BASE_YEAR_AMOUNT = 3500.0; // PLN/mies.
 
     // Udział realnego wzrostu płac w indeksacji konta (CPI + alpha * real)
-    private static final double ACCOUNT_INDEXATION_REAL_SHARE = 0.35;
+    private static final double ACCOUNT_INDEXATION_REAL_SHARE = 1;
 
     private final MacroPaths macro = new MacroPaths();
     private final LifeTables life = new LifeTables();
