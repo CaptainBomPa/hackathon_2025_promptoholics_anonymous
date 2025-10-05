@@ -1,7 +1,7 @@
 package com.promptoholics.anonymous.ApiBackend.adapters;
 
 import com.promptoholics.anonymous.ApiBackend.api.CalculationApi;
-import com.promptoholics.anonymous.ApiBackend.application.CalculationFacade;
+import com.promptoholics.anonymous.ApiBackend.application.CalculationFacadeV2;
 import com.promptoholics.anonymous.ApiBackend.schemas.dtos.PensionCalculationRequestDto;
 import com.promptoholics.anonymous.ApiBackend.schemas.dtos.PensionCalculationResponseDto;
 import com.promptoholics.anonymous.ApiBackend.schemas.dtos.PostalCodeUpdateRequestDto;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class CalculationController implements CalculationApi {
 
-    private final CalculationFacade calculationFacade;
+    private final CalculationFacadeV2 calculationFacade;
 
     @Override
     public ResponseEntity<PensionCalculationResponseDto> calculatePensions(PensionCalculationRequestDto request) {
