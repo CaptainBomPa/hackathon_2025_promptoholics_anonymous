@@ -30,7 +30,7 @@ public class CalculationFacadeV3 {
 
     // Fallback dla średniej emerytury (do podmiany danymi)
     private static final int AVG_PENSION_BASE_YEAR = 2023;
-    private static final double AVG_PENSION_BASE_YEAR_AMOUNT = 3500.0; // PLN/mies.
+    private static final double AVG_PENSION_BASE_YEAR_AMOUNT = 8000.0; // PLN/mies.
 
     // Udział realnego wzrostu płac w indeksacji konta (CPI + alpha * real)
     private static final double ACCOUNT_INDEXATION_REAL_SHARE = 1;
