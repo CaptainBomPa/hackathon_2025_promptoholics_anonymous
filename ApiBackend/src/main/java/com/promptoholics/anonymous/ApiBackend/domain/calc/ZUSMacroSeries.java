@@ -65,13 +65,43 @@ public class ZUSMacroSeries {
 
     /* === Public API === */
     public BigDecimal accountIndexFactor(int year) {
-        return accountAnnualIndex.getOrDefault(year, factor("105.00"));
+        // For historical years, use actual data
+        if (accountAnnualIndex.containsKey(year)) {
+            return accountAnnualIndex.get(year);
+        }
+
+        // For future years (2025+), project based on wage growth
+        // Formula: waloryzacja ≈ inflacja (2.5%) + realny wzrost płac (2.9%) + premia (0.5%)
+        // Historical average was ~108% (8%), so we use conservative 106% (6%) for projection
+        return new BigDecimal("1.06");
     }
 
     public BigDecimal subaccountIndexFactorYear(int year) {
-        BigDecimal f = BigDecimal.ONE;
-        for (int q = 1; q <= 4; q++) f = f.multiply(subaccountQuarterIndex.getOrDefault(key(year, q), BigDecimal.ONE));
-        return f;
+        // For years with quarterly data, use actual
+        boolean hasData = false;
+        for (int q = 1; q <= 4; q++) {
+            if (subaccountQuarterIndex.containsKey(key(year, q))) {
+                hasData = true;
+                break;
+            }
+        }
+
+        if (hasData) {
+            BigDecimal f = BigDecimal.ONE;
+            for (int q = 1; q <= 4; q++) {
+                String k = key(year, q);
+                // Use actual if available, otherwise use Q1 of same year as proxy
+                BigDecimal qFactor = subaccountQuarterIndex.getOrDefault(k,
+                        subaccountQuarterIndex.getOrDefault(key(year, 1), new BigDecimal("1.015")));
+                f = f.multiply(qFactor);
+            }
+            return f;
+        }
+
+        // For future years without data, project based on GDP growth
+        // Subaccount is valorized by 5-year avg GDP growth
+        // Conservative estimate: ~5.5% annually
+        return new BigDecimal("1.055");
     }
 
     public BigDecimal averageMonthlyWage(int year) {

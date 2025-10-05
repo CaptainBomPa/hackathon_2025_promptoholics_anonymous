@@ -18,12 +18,17 @@ public class PensionCalculatorService {
     /** Rok bazowy (deflacja/urealnianie). */
     private static final int BASE_YEAR_FOR_REAL = 2025;
 
-    /** Łączna stopa składki emerytalnej (pracownik+pracodawca). */
+    /** Łączna stopa składki emerytalnej (pracownik+pracodawca) - dla UoP i UZ. */
     private static final BigDecimal EMP_RATE_TOTAL      = new BigDecimal("0.1952");
-    /** Na konto (waloryzacja roczna). */
+    /** Na konto (waloryzacja roczna) - proporcja z total. */
     private static final BigDecimal EMP_RATE_TO_ACCOUNT = new BigDecimal("0.1500");
-    /** Na subkonto (waloryzacja kwartalna). */
+    /** Na subkonto (waloryzacja kwartalna) - proporcja z total. */
     private static final BigDecimal EMP_RATE_TO_SUBACCT = EMP_RATE_TOTAL.subtract(EMP_RATE_TO_ACCOUNT);
+
+    /** Procentowy udział składki na konto w całkowitej składce emerytalnej */
+    private static final BigDecimal ACCOUNT_RATIO = EMP_RATE_TO_ACCOUNT.divide(EMP_RATE_TOTAL, 10, RoundingMode.HALF_UP);
+    /** Procentowy udział składki na subkonto w całkowitej składce emerytalnej */
+    private static final BigDecimal SUBACCT_RATIO = EMP_RATE_TO_SUBACCT.divide(EMP_RATE_TOTAL, 10, RoundingMode.HALF_UP);
 
     /** Uśredniony wpływ chorobowego. */
     public static final BigDecimal SICK_M = new BigDecimal("0.020"); // 2%
@@ -49,8 +54,19 @@ public class PensionCalculatorService {
             BigDecimal zusSubaccount,    // saldo subkonta (dziś)
             String postal,
             Integer additionalSickDaysPerYear,  // dodatkowe dni chorobowe rocznie (oprócz domyślnych 2%/3%)
-            List<WorkBreak> workBreaks          // okresy przerw w pracy (BREAK type)
+            List<WorkBreak> workBreaks,         // okresy przerw w pracy (BREAK type)
+            ContractType contractType            // rodzaj umowy (wpływa na wysokość składek)
     ) {}
+
+    /**
+     * Contract type enum - affects contribution rates
+     */
+    public enum ContractType {
+        UMOWA_O_PRACE,      // Full contributions 19.52%
+        UMOWA_ZLECENIE,     // Full contributions 19.52% (unless student)
+        B2B,                // No mandatory contributions (can be 0% or voluntary)
+        UMOWA_O_DZIELO      // No contributions 0%
+    }
 
     /**
      * Work break period - time when contributions were not made
@@ -81,14 +97,17 @@ public class PensionCalculatorService {
         // 2) Chorobowe (domyślne + dodatkowe dni)
         BigDecimal sick = calculateSickLeaveImpact(in);
 
-        // 3) Roczna podstawa (po chorobowym) z limitem 30-krotności
+        // 3) Efektywna stopa składki (zależy od rodzaju umowy)
+        BigDecimal contributionRate = getContributionRate(in.contractType());
+
+        // 4) Roczna podstawa (po chorobowym) z limitem 30-krotności
         Map<Integer, BigDecimal> baseIncl = annualBaseWithLimit(wagePath, sick);
 
-        // 4) Uwzględnij przerwy w pracy (BREAK periods) - wyzeruj składki w tych latach
+        // 5) Uwzględnij przerwy w pracy (BREAK periods) - wyzeruj składki w tych latach
         baseIncl = applyWorkBreaks(baseIncl, in.workBreaks());
 
-        // 5) Akumulacja konta i subkonta z waloryzacją
-        Accum acc = accumulateSplit(nvl(in.zusAccount()), nvl(in.zusSubaccount()), baseIncl);
+        // 6) Akumulacja konta i subkonta z waloryzacją
+        Accum acc = accumulateSplit(nvl(in.zusAccount()), nvl(in.zusSubaccount()), baseIncl, contributionRate);
 
         // 5) Annuitetyzacja w retYear → MIESIĘCZNIE
         int months = life.months(in.sex(), in.retYear());
@@ -117,7 +136,7 @@ public class PensionCalculatorService {
         // 10) Postponed: LICZYMY DO NOWEGO ROKU (dokładamy lata)
         Map<String, BigDecimal> postponed = new LinkedHashMap<>();
         for (int y : new int[]{1, 2, 5}) {
-            postponed.put(String.valueOf(y), recompute(in, in.retYear() + y, sick));
+            postponed.put(String.valueOf(y), recompute(in, in.retYear() + y, sick, contributionRate));
         }
 
         return new CalculationResult(
@@ -165,17 +184,25 @@ public class PensionCalculatorService {
     /** Wynik akumulacji konta/subkonta. */
     private record Accum(BigDecimal account, BigDecimal subaccount){}
 
-    /** Akumulacja: konto (roczna waloryzacja), subkonto (iloczyn kwartalnych). */
-    private Accum accumulateSplit(BigDecimal initAcc, BigDecimal initSub, Map<Integer, BigDecimal> annualBase){
+    /**
+     * Akumulacja: konto (roczna waloryzacja), subkonto (iloczyn kwartalnych).
+     * @param contributionRate effective contribution rate based on contract type
+     */
+    private Accum accumulateSplit(BigDecimal initAcc, BigDecimal initSub, Map<Integer, BigDecimal> annualBase, BigDecimal contributionRate){
         BigDecimal acc = initAcc;
         BigDecimal sub = initSub;
         var years = new ArrayList<>(annualBase.keySet());
         Collections.sort(years);
+
+        // Calculate how much goes to account vs subaccount based on the ratio
+        BigDecimal toAccount = contributionRate.multiply(ACCOUNT_RATIO);
+        BigDecimal toSubacct = contributionRate.multiply(SUBACCT_RATIO);
+
         for (Integer y : years){
             BigDecimal base = annualBase.get(y);
-            acc = acc.add(base.multiply(EMP_RATE_TO_ACCOUNT))
+            acc = acc.add(base.multiply(toAccount))
                     .multiply(macro.accountIndexFactor(y));
-            sub = sub.add(base.multiply(EMP_RATE_TO_SUBACCT))
+            sub = sub.add(base.multiply(toSubacct))
                     .multiply(macro.subaccountIndexFactorYear(y));
         }
         return new Accum(acc, sub);
@@ -196,11 +223,11 @@ public class PensionCalculatorService {
      * Postponed: budujemy wagePath do newYear, liczymy roczną bazę z limitem, akumulujemy i annuitetyzujemy
      * na newYear → zwracamy NOMINALNĄ emeryturę MIESIĘCZNĄ w newYear.
      */
-    private BigDecimal recompute(Input in, int newYear, BigDecimal sick){
+    private BigDecimal recompute(Input in, int newYear, BigDecimal sick, BigDecimal contributionRate){
         Map<Integer, BigDecimal> wage = wagePath(in.grossMonthly(), BASE_YEAR_FOR_REAL, newYear);
         Map<Integer, BigDecimal> base = annualBaseWithLimit(wage, sick);
         base = applyWorkBreaks(base, in.workBreaks()); // Apply work breaks for postponed scenarios too
-        Accum acc = accumulateSplit(nvl(in.zusAccount()), nvl(in.zusSubaccount()), base);
+        Accum acc = accumulateSplit(nvl(in.zusAccount()), nvl(in.zusSubaccount()), base, contributionRate);
         int months = life.months(in.sex(), newYear);
         BigDecimal capital = acc.account.add(acc.subaccount);
         return capital.divide(new BigDecimal(months), 10, RoundingMode.HALF_UP);
@@ -224,6 +251,27 @@ public class PensionCalculatorService {
         }
 
         return baseSick;
+    }
+
+    /**
+     * Calculate effective contribution rate based on contract type
+     *
+     * UMOWA_O_PRACE: 19.52% (standard employment)
+     * UMOWA_ZLECENIE: 19.52% (civil contract - same as employment)
+     * B2B: 0% (no mandatory contributions, but can opt-in voluntarily - we assume 0 for worst case)
+     * UMOWA_O_DZIELO: 0% (contract for specific work - no contributions)
+     */
+    private BigDecimal getContributionRate(ContractType contractType) {
+        if (contractType == null) {
+            return EMP_RATE_TOTAL; // Default to full contributions
+        }
+
+        return switch (contractType) {
+            case UMOWA_O_PRACE -> EMP_RATE_TOTAL;      // 19.52%
+            case UMOWA_ZLECENIE -> EMP_RATE_TOTAL;     // 19.52%
+            case B2B -> BigDecimal.ZERO;                // 0% (worst case - no voluntary contributions)
+            case UMOWA_O_DZIELO -> BigDecimal.ZERO;     // 0%
+        };
     }
 
     /**

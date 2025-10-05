@@ -12,6 +12,7 @@ Accept: application/json
   "includeSickLeave": true,
   "zusAccountFundsPLN": 35000.5,
   "postalCode": "02-776",
+  "contractType": "UMOWA_O_PRACE",
   "additionalSickLeaveDaysPerYear": 10,
   "additionalSalaryChanges": [
     { "changeType": "BREAK", "startDate": "2024-02-10T00:00:00Z", "endDate": "2024-12-31T23:59:59Z" },

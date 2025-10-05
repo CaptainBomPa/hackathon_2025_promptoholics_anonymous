@@ -29,6 +29,9 @@ public class PensionCalculatorManualTest {
 
         // Test 5: Work breaks and additional sick days
         testWorkBreaksAndSickDays();
+
+        // Test 6: Contract type comparison
+        testContractTypes();
     }
 
     private static void testScenario1() {
@@ -49,7 +52,8 @@ public class PensionCalculatorManualTest {
             BigDecimal.ZERO,                // ZUS subaccount
             null,                           // postal
             null,                           // additional sick days per year
-            null                            // work breaks
+            null,                           // work breaks
+            PensionCalculatorService.ContractType.UMOWA_O_PRACE  // contract type
         );
 
         var result = calc.calculate(input);
@@ -128,7 +132,8 @@ public class PensionCalculatorManualTest {
             BigDecimal.ZERO,
             null,
             null,
-            null
+            null,
+            PensionCalculatorService.ContractType.UMOWA_O_PRACE
         );
 
         var result = calc.calculate(input);
@@ -157,14 +162,16 @@ public class PensionCalculatorManualTest {
         // Male calculation
         var inputM = new PensionCalculatorService.Input(
             null, 30, "M", new BigDecimal("6000"), 2025, 2060, true,
-            BigDecimal.ZERO, BigDecimal.ZERO, null, null, null
+            BigDecimal.ZERO, BigDecimal.ZERO, null, null, null,
+            PensionCalculatorService.ContractType.UMOWA_O_PRACE
         );
         var resultM = calc.calculate(inputM);
 
         // Female calculation
         var inputF = new PensionCalculatorService.Input(
             null, 30, "F", new BigDecimal("6000"), 2025, 2060, true,
-            BigDecimal.ZERO, BigDecimal.ZERO, null, null, null
+            BigDecimal.ZERO, BigDecimal.ZERO, null, null, null,
+            PensionCalculatorService.ContractType.UMOWA_O_PRACE
         );
         var resultF = calc.calculate(inputF);
 
@@ -248,7 +255,8 @@ public class PensionCalculatorManualTest {
         // Test without breaks (baseline)
         var inputBaseline = new PensionCalculatorService.Input(
             null, 30, "M", new BigDecimal("8000"), 2025, 2060, true,
-            BigDecimal.ZERO, BigDecimal.ZERO, null, null, null
+            BigDecimal.ZERO, BigDecimal.ZERO, null, null, null,
+            PensionCalculatorService.ContractType.UMOWA_O_PRACE
         );
         var resultBaseline = calc.calculate(inputBaseline);
 
@@ -258,21 +266,24 @@ public class PensionCalculatorManualTest {
         );
         var inputWithBreak = new PensionCalculatorService.Input(
             null, 30, "M", new BigDecimal("8000"), 2025, 2060, true,
-            BigDecimal.ZERO, BigDecimal.ZERO, null, null, breaks
+            BigDecimal.ZERO, BigDecimal.ZERO, null, null, breaks,
+            PensionCalculatorService.ContractType.UMOWA_O_PRACE
         );
         var resultWithBreak = calc.calculate(inputWithBreak);
 
         // Test with additional 10 sick days per year
         var inputWithExtraSick = new PensionCalculatorService.Input(
             null, 30, "M", new BigDecimal("8000"), 2025, 2060, true,
-            BigDecimal.ZERO, BigDecimal.ZERO, null, 10, null
+            BigDecimal.ZERO, BigDecimal.ZERO, null, 10, null,
+            PensionCalculatorService.ContractType.UMOWA_O_PRACE
         );
         var resultWithExtraSick = calc.calculate(inputWithExtraSick);
 
         // Test with both breaks and extra sick days
         var inputWithBoth = new PensionCalculatorService.Input(
             null, 30, "M", new BigDecimal("8000"), 2025, 2060, true,
-            BigDecimal.ZERO, BigDecimal.ZERO, null, 10, breaks
+            BigDecimal.ZERO, BigDecimal.ZERO, null, 10, breaks,
+            PensionCalculatorService.ContractType.UMOWA_O_PRACE
         );
         var resultWithBoth = calc.calculate(inputWithBoth);
 
@@ -325,6 +336,115 @@ public class PensionCalculatorManualTest {
             System.out.println("\n✅ Test 5 PASSED\n");
         } else {
             System.out.println("\n❌ Test 5 FAILED\n");
+        }
+    }
+
+    private static void testContractTypes() {
+        System.out.println("TEST 6: Contract type comparison (impact on pension)");
+        System.out.println("-----------------------------------------------------");
+
+        PensionCalculatorService calc = new PensionCalculatorService();
+
+        // Same baseline for all: 30 years old, 8000 PLN/month, retire 2060
+        int age = 30;
+        BigDecimal salary = new BigDecimal("8000");
+        int startYear = 2025;
+        int retYear = 2060;
+
+        // Test UMOWA_O_PRACE (full contributions 19.52%)
+        var inputUoP = new PensionCalculatorService.Input(
+            null, age, "M", salary, startYear, retYear, true,
+            BigDecimal.ZERO, BigDecimal.ZERO, null, null, null,
+            PensionCalculatorService.ContractType.UMOWA_O_PRACE
+        );
+        var resultUoP = calc.calculate(inputUoP);
+
+        // Test UMOWA_ZLECENIE (full contributions 19.52%)
+        var inputUZ = new PensionCalculatorService.Input(
+            null, age, "M", salary, startYear, retYear, true,
+            BigDecimal.ZERO, BigDecimal.ZERO, null, null, null,
+            PensionCalculatorService.ContractType.UMOWA_ZLECENIE
+        );
+        var resultUZ = calc.calculate(inputUZ);
+
+        // Test B2B (no mandatory contributions 0%)
+        var inputB2B = new PensionCalculatorService.Input(
+            null, age, "M", salary, startYear, retYear, true,
+            BigDecimal.ZERO, BigDecimal.ZERO, null, null, null,
+            PensionCalculatorService.ContractType.B2B
+        );
+        var resultB2B = calc.calculate(inputB2B);
+
+        // Test UMOWA_O_DZIELO (no contributions 0%)
+        var inputUoD = new PensionCalculatorService.Input(
+            null, age, "M", salary, startYear, retYear, true,
+            BigDecimal.ZERO, BigDecimal.ZERO, null, null, null,
+            PensionCalculatorService.ContractType.UMOWA_O_DZIELO
+        );
+        var resultUoD = calc.calculate(inputUoD);
+
+        System.out.println("Baseline: 8000 PLN gross monthly, 35 years of work (2025-2060)\n");
+
+        System.out.println("UMOWA O PRACĘ (Employment contract - 19.52% contributions):");
+        System.out.println("  Monthly pension: " + resultUoP.actualMonthly().setScale(2, java.math.RoundingMode.HALF_UP) + " PLN");
+        System.out.println("  Replacement rate: " + resultUoP.replacementPct().setScale(2, java.math.RoundingMode.HALF_UP) + "%");
+
+        System.out.println("\nUMOWA ZLECENIE (Civil contract - 19.52% contributions):");
+        System.out.println("  Monthly pension: " + resultUZ.actualMonthly().setScale(2, java.math.RoundingMode.HALF_UP) + " PLN");
+        System.out.println("  Replacement rate: " + resultUZ.replacementPct().setScale(2, java.math.RoundingMode.HALF_UP) + "%");
+
+        System.out.println("\nB2B (Self-employment - 0% mandatory contributions):");
+        System.out.println("  Monthly pension: " + resultB2B.actualMonthly().setScale(2, java.math.RoundingMode.HALF_UP) + " PLN");
+        System.out.println("  Replacement rate: " + resultB2B.replacementPct().setScale(2, java.math.RoundingMode.HALF_UP) + "%");
+
+        System.out.println("\nUMOWA O DZIEŁO (Contract for specific work - 0% contributions):");
+        System.out.println("  Monthly pension: " + resultUoD.actualMonthly().setScale(2, java.math.RoundingMode.HALF_UP) + " PLN");
+        System.out.println("  Replacement rate: " + resultUoD.replacementPct().setScale(2, java.math.RoundingMode.HALF_UP) + "%");
+
+        // Validation
+        boolean valid = true;
+
+        // UoP and UZ should have same pension (same contribution rate)
+        if (!resultUoP.actualMonthly().equals(resultUZ.actualMonthly())) {
+            System.out.println("\n❌ ERROR: UoP and UZ should have same pension (same contribution rate)!");
+            valid = false;
+        } else {
+            System.out.println("\n✅ UoP and UZ have same pension (correct - same contribution rate)");
+        }
+
+        // B2B and UoD should have zero or minimal pension (no contributions)
+        if (resultB2B.actualMonthly().compareTo(new BigDecimal("100")) > 0) {
+            System.out.println("❌ ERROR: B2B should have minimal pension (no contributions)!");
+            valid = false;
+        } else {
+            System.out.println("✅ B2B has minimal pension (correct - no contributions)");
+        }
+
+        if (resultUoD.actualMonthly().compareTo(new BigDecimal("100")) > 0) {
+            System.out.println("❌ ERROR: UoD should have minimal pension (no contributions)!");
+            valid = false;
+        } else {
+            System.out.println("✅ UoD has minimal pension (correct - no contributions)");
+        }
+
+        // UoP should have much higher pension than B2B
+        if (resultUoP.actualMonthly().compareTo(resultB2B.actualMonthly().multiply(new BigDecimal("10"))) < 0) {
+            System.out.println("❌ ERROR: UoP should have much higher pension than B2B!");
+            valid = false;
+        } else {
+            System.out.println("✅ UoP has significantly higher pension than B2B");
+        }
+
+        // Show impact
+        System.out.println("\nIMPACT ANALYSIS:");
+        System.out.println("Choosing B2B/UoD over UoP costs you: " +
+            resultUoP.actualMonthly().subtract(resultB2B.actualMonthly()).setScale(2, java.math.RoundingMode.HALF_UP) +
+            " PLN/month in pension");
+
+        if (valid) {
+            System.out.println("\n✅ Test 6 PASSED\n");
+        } else {
+            System.out.println("\n❌ Test 6 FAILED\n");
         }
     }
 }

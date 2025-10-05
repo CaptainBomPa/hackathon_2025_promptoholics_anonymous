@@ -30,7 +30,10 @@ public class CalculationFacade {
         // 1) Parse work breaks from additionalSalaryChanges
         List<PensionCalculatorService.WorkBreak> workBreaks = parseWorkBreaks(req);
 
-        // 2) Silnik (wyniki miesięczne)
+        // 2) Parse contract type
+        PensionCalculatorService.ContractType contractType = parseContractType(req.getContractType());
+
+        // 3) Silnik (wyniki miesięczne)
         var in = new PensionCalculatorService.Input(
                 toBD(req.getExpectedPensionPLN()),                // traktujemy jako miesięczne "expected"
                 req.getAge(),
@@ -43,7 +46,8 @@ public class CalculationFacade {
                 BigDecimal.ZERO,
                 fromJN(req.getPostalCode()),
                 req.getAdditionalSickLeaveDaysPerYear(),          // dodatkowe dni chorobowe rocznie
-                workBreaks                                         // przerwy w pracy
+                workBreaks,                                        // przerwy w pracy
+                contractType                                       // rodzaj umowy
         );
         var out = calculator.calculate(in);
 
@@ -165,6 +169,23 @@ public class CalculationFacade {
     }
 
     /* ===================== helpers ===================== */
+
+    /**
+     * Parse contract type from request DTO
+     */
+    private PensionCalculatorService.ContractType parseContractType(
+            PensionCalculationRequestDto.ContractTypeEnum contractTypeEnum) {
+        if (contractTypeEnum == null) {
+            return PensionCalculatorService.ContractType.UMOWA_O_PRACE; // Default to employment contract
+        }
+
+        return switch (contractTypeEnum) {
+            case B2_B -> PensionCalculatorService.ContractType.B2B;
+            case UMOWA_O_PRACE -> PensionCalculatorService.ContractType.UMOWA_O_PRACE;
+            case UMOWA_ZLECENIE -> PensionCalculatorService.ContractType.UMOWA_ZLECENIE;
+            case UMOWA_O_DZIELO -> PensionCalculatorService.ContractType.UMOWA_O_DZIELO;
+        };
+    }
 
     /**
      * Parse work breaks from additionalSalaryChanges (BREAK type entries)
