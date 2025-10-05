@@ -4,11 +4,11 @@ Accept: application/json
 
 {
   "expectedPensionPLN": 12000.0,
-  "age": 35,
+  "age": 34,
   "sex": "F",
-  "grossSalaryPLN": 22500.0,
+  "grossSalaryPLN": 5500.0,
   "startYear": 2012,
-  "plannedEndYear": 2060,
+  "plannedEndYear": 2070,
   "includeSickLeave": true,
   "zusAccountFundsPLN": 35000.5,
   "postalCode": "02-776",
@@ -16,6 +16,7 @@ Accept: application/json
   "additionalSickLeaveDaysPerYear": 10,
   "additionalSalaryChanges": [
     { "changeType": "BREAK", "startDate": "2024-02-10T00:00:00Z", "endDate": "2024-12-31T23:59:59Z" },
-    { "changeType": "BREAK", "startDate": "2030-01-01T00:00:00Z", "endDate": "2031-12-31T23:59:59Z" }
+    { "changeType": "BREAK", "startDate": "2030-01-01T00:00:00Z", "endDate": "2034-12-31T23:59:59Z" },
+    { "changeType": "WORK", "startDate": "2036-01-01T00:00:00Z", "endDate": "2042-12-31T23:59:59Z", "salary": 21000}
   ]
 }

@@ -1,22 +1,17 @@
 package com.promptoholics.anonymous.ApiBackend.application;
 
-import com.promptoholics.anonymous.ApiBackend.domain.PensionCalculationEntity;
 import com.promptoholics.anonymous.ApiBackend.domain.PensionCalculationRepository;
-import com.promptoholics.anonymous.ApiBackend.domain.calc.PensionCalculatorService;
-import com.promptoholics.anonymous.ApiBackend.schemas.dtos.PensionCalculationRequestDto;
-import com.promptoholics.anonymous.ApiBackend.schemas.dtos.PensionCalculationResponseDto;
-import com.promptoholics.anonymous.ApiBackend.schemas.dtos.PostalCodeUpdateRequestDto;
+import com.promptoholics.anonymous.ApiBackend.schemas.dtos.*;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.stereotype.Component;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.YearMonth;
 import java.util.*;
 
 @Component
@@ -24,138 +19,526 @@ import java.util.*;
 public class CalculationFacade {
 
     private final PensionCalculationRepository pensionCalculationRepository;
-    private final PensionCalculatorService calculator = new PensionCalculatorService(); // silnik (miesięczny)
+
+    // Kalibracja: cel replacement ~25% (możesz dostroić)
+    private static final double EFFECTIVE_PENSION_CONTRIB_RATE = 0.1200; // 12% podstawy składek
+    private static final int WORKING_DAYS_PER_YEAR = 252;                // ~dni robocze
+
+    // Domyślna liczba dni chorobowych wg płci – dla różnicowania wariantów "Incl" vs "Excl"
+    private static final int DEFAULT_SICK_DAYS_F = 24;
+    private static final int DEFAULT_SICK_DAYS_M = 15;
+
+    // Fallback dla średniej emerytury (do podmiany danymi)
+    private static final int AVG_PENSION_BASE_YEAR = 2023;
+    private static final double AVG_PENSION_BASE_YEAR_AMOUNT = 3500.0; // PLN/mies.
+
+    // Udział realnego wzrostu płac w indeksacji konta (CPI + alpha * real)
+    private static final double ACCOUNT_INDEXATION_REAL_SHARE = 0.35;
+
+    private final MacroPaths macro = new MacroPaths();
+    private final LifeTables life = new LifeTables();
 
     public PensionCalculationResponseDto calculatePensions(PensionCalculationRequestDto req) {
-        // 1) Parse work breaks from additionalSalaryChanges
-        List<PensionCalculatorService.WorkBreak> workBreaks = parseWorkBreaks(req);
+        Objects.requireNonNull(req, "Request cannot be null");
+        validate(req);
 
-        // 2) Parse contract type
-        PensionCalculatorService.ContractType contractType = parseContractType(req.getContractType());
+        int currentYear = LocalDate.now().getYear();
+        int startYear = req.getStartYear();
+        int retireYear = req.getPlannedEndYear();
+        int yearsToRetire = Math.max(0, retireYear - currentYear);
 
-        // 3) Silnik (wyniki miesięczne)
-        var in = new PensionCalculatorService.Input(
-                toBD(req.getExpectedPensionPLN()),                // traktujemy jako miesięczne "expected"
-                req.getAge(),
-                req.getSex()!=null ? req.getSex().getValue() : "M",
-                toBD(req.getGrossSalaryPLN()),
-                req.getStartYear(),
-                req.getPlannedEndYear(),
-                Boolean.TRUE.equals(req.getIncludeSickLeave()),
-                toBD(fromJN(req.getZusAccountFundsPLN())),
-                BigDecimal.ZERO,
-                fromJN(req.getPostalCode()),
-                req.getAdditionalSickLeaveDaysPerYear(),          // dodatkowe dni chorobowe rocznie
-                workBreaks,                                        // przerwy w pracy
-                contractType                                       // rodzaj umowy
+        boolean includeSick = Boolean.TRUE.equals(req.getIncludeSickLeave());
+
+        // Parametry zależne od typu umowy
+        ContractParams contract = resolveContractParams(req.getContractType());
+
+        // Dni chorobowe: bazowe wg płci + dodatkowe
+        int baseSickDaysBySex = (req.getSex() == PensionCalculationRequestDto.SexEnum.F)
+                ? DEFAULT_SICK_DAYS_F : DEFAULT_SICK_DAYS_M;
+        int extraSickDays = Optional.ofNullable(req.getAdditionalSickLeaveDaysPerYear()).orElse(0);
+        int totalSickDaysForIncl = contract.sickEligible ? Math.max(0, baseSickDaysBySex + extraSickDays) : 0;
+
+        // Miesięczna płaca W ROKU BIEŻĄCYM (grossSalaryPLN to płaca TERAZ)
+        double monthlyGrossCurrent = asDouble(req.getGrossSalaryPLN());
+
+        // === 1) BUDUJEMY ŚCIEŻKĘ ROCZNĄ bazową od startYear do retireYear, zakotwiczoną w currentYear ===
+        Map<Integer, Double> baseMonthlyByYearExcl = buildYearlyBaseline(
+                startYear, currentYear, retireYear, monthlyGrossCurrent
         );
-        var out = calculator.calculate(in);
 
-        // 2) Persist (miesięczne wartości)
-        UUID id = UUID.randomUUID();
-        try {
-            PensionCalculationEntity e = new PensionCalculationEntity();
-            trySet(e,"id", id);
-            trySet(e,"expectedPension", dbl(req.getExpectedPensionPLN())); // spodziewana MIESIĘCZNA
-            trySet(e,"age", req.getAge());
-            trySet(e,"gender", req.getSex()!=null ? req.getSex().getValue() : "M");
-            trySet(e,"salaryAmount", dbl(req.getGrossSalaryPLN()));
-            trySet(e,"includedSicknessPeriods", Boolean.TRUE.equals(req.getIncludeSickLeave()));
-            if (req.getZusAccountFundsPLN()!=null && req.getZusAccountFundsPLN().isPresent())
-                trySet(e,"accumulatedFundsTotal", dbl(req.getZusAccountFundsPLN().get()));
-            if (req.getPostalCode()!=null && req.getPostalCode().isPresent())
-                trySet(e,"postalCode", req.getPostalCode().get());
-            trySet(e,"actualPension", scale2(out.actualMonthly()).doubleValue());
-            trySet(e,"inflationAdjustedPension", scale2(out.realMonthly2025()).doubleValue());
-            pensionCalculationRepository.saveAndFlush(e);
-        } catch (Throwable ignore) { /* testy bez bazy */ }
-
-        // 3) Odpowiedź DTO (miesięczne wartości)
-        PensionCalculationResponseDto resp = new PensionCalculationResponseDto();
-
-        // id
-        if (!tryInvoke(resp, "setId", new Class[]{UUID.class}, new Object[]{id})) {
-            tryInvoke(resp, "setId", new Class[]{String.class}, new Object[]{id.toString()});
+        // Wariant "Incl" – współczynnik chorobowy (jeśli umowa daje prawo do chorobowego)
+        double sickFactor = sickAdjustmentFactor(totalSickDaysForIncl, contract.sickReplacementRate);
+        Map<Integer, Double> baseMonthlyByYearIncl = new LinkedHashMap<>();
+        for (int y = startYear; y <= retireYear; y++) {
+            double v = baseMonthlyByYearExcl.get(y);
+            baseMonthlyByYearIncl.put(y, round2(contract.sickEligible ? v * sickFactor : v));
         }
 
-        // requestedAt
-        tryInvoke(resp, "setRequestedAt", new Class[]{OffsetDateTime.class},
-                new Object[]{OffsetDateTime.ofInstant(out.requestedAt(), ZoneOffset.UTC)});
-
-        // result
-        Object result = tryConstructParamOf(resp, "setResult");
-        if (result != null) {
-            // nominal (MIESIĘCZNIE)
-            trySetNumberFlexible(result, "setActualAmountPLN",  scale2(out.actualMonthly()));
-            trySetNumberFlexible(result, "setActualAmountPln",  scale2(out.actualMonthly()));
-
-            // real (MIESIĘCZNIE)
-            if (!( trySetNumberFlexible(result, "setRealAmountDeflated",      scale2(out.realMonthly2025()))
-                    || trySetNumberFlexible(result, "setRealAmountPLN2025",       scale2(out.realMonthly2025()))
-                    || trySetNumberFlexible(result, "setRealAmountPLN_2025",      scale2(out.realMonthly2025()))
-                    || trySetNumberFlexible(result, "setRealAmountPln2025",       scale2(out.realMonthly2025()))
-                    || trySetNumberFlexible(result, "setRealAmountPln_2025",      scale2(out.realMonthly2025())) )) {
-                // pomijamy
+        // === 2) ROZWINIĘCIE NA SIATKĘ MIESIĘCZNĄ (YearMonth) ===
+        Map<YearMonth, Double> monthlyExcl = new LinkedHashMap<>();
+        Map<YearMonth, Double> monthlyIncl = new LinkedHashMap<>();
+        for (int y = startYear; y <= retireYear; y++) {
+            for (int m = 1; m <= 12; m++) {
+                YearMonth ym = YearMonth.of(y, m);
+                monthlyExcl.put(ym, baseMonthlyByYearExcl.get(y));
+                monthlyIncl.put(ym, baseMonthlyByYearIncl.get(y));
             }
+        }
 
-            // wskaźniki (bez zmian – proporcje)
-            trySetNumberFlexible(result, "setReplacementRatePct",             scale1(out.replacementPct()));
-            if (out.vsAvgPct()!=null) {
-                if (!( trySetNumberFlexible(result, "setVsAverageInRetirementYearPct", scale1(out.vsAvgPct()))
-                        || trySetNumberFlexible(result, "setVsAveragePct",                  scale1(out.vsAvgPct())) )) {
-                    // pomijamy
-                }
+        // === 3) OVERRIDES: additionalSalaryChanges (BREAK/WORK z datami i pensją) ===
+        List<ChangeSpan> changes = parseChanges(req.getAdditionalSalaryChanges());
+        applyChangesToMonthlyGrid(changes, monthlyExcl, monthlyIncl, startYear, retireYear,
+                contract.sickEligible, sickFactor);
+
+        // === 4) WYZNACZ PUNKT STARTU AKUMULACJI (snapshot środków z ZUS minimalizuje podwajanie historii) ===
+        boolean hasSnapshotFunds = req.getZusAccountFundsPLN() != null && req.getZusAccountFundsPLN().isPresent();
+        double startingFunds = hasSnapshotFunds ? req.getZusAccountFundsPLN().get() : 0.0;
+        int accumulationStartYear = hasSnapshotFunds ? currentYear : startYear;
+
+        // === 5) POLICZ DWA SCENARIUSZE PULI I EMERYTURY: EXCL i INCL (od accumulationStartYear) ===
+        AccumResult accExcl = accumulateFromMonthly(accumulationStartYear, retireYear, startingFunds,
+                monthlyExcl, contract.pensionBaseFactor);
+        AccumResult accIncl = accumulateFromMonthly(accumulationStartYear, retireYear, startingFunds,
+                monthlyIncl, contract.pensionBaseFactor);
+
+        // Miesięczna emerytura nominalna (obie wersje)
+        int ageAtRetirement = req.getAge() + yearsToRetire;
+        double payoutYears = life.annuityDivisor(ageAtRetirement, req.getSex()); // w latach
+        double monthlyPensionNominalExcl = (accExcl.pot / Math.max(1e-9, payoutYears)) / 12.0;
+        double monthlyPensionNominalIncl = (accIncl.pot / Math.max(1e-9, payoutYears)) / 12.0;
+
+        // Wybór scenariusza „actual” zgodnie z flagą includeSickLeave
+        double monthlyPensionNominalActual = includeSick ? monthlyPensionNominalIncl : monthlyPensionNominalExcl;
+        List<PensionCalculationResponseResultZusAccountFundsByYearInnerDto> potTimelineActual =
+                includeSick ? accIncl.timeline : accExcl.timeline;
+
+        // Urealnienie do „dzisiejszych płac” – deflator po ścieżce NOMINALNEGO wzrostu wynagrodzeń
+        double wageDeflatorToToday = macro.deflatorByNominalWage(retireYear, currentYear);
+        double monthlyPensionRealToday = monthlyPensionNominalActual / Math.max(1e-9, wageDeflatorToToday);
+
+        // Replacement rate – miesięczna emerytura (actual) / miesięczna płaca bez chorobowego w roku przejścia
+        double wageRetExcl = baseMonthlyByYearExcl.get(retireYear);
+        double replacementRatePct = monthlyPensionNominalActual / Math.max(1e-9, wageRetExcl) * 100.0;
+
+        // Relacja do średniej emerytury (miesięcznej) w roku przejścia
+        double avgPensionInYearMonthly = macro.projectAveragePension(retireYear);
+        double vsAvgPct = monthlyPensionNominalActual / Math.max(1e-9, avgPensionInYearMonthly) * 100.0;
+
+        // === 6) salaryByYear (salaryProjection): od ROKU BIEŻĄCEGO do retireYear ===
+        Map<YearMonth, Double> monthlyChosen = includeSick ? monthlyIncl : monthlyExcl;
+        List<PensionCalculationResponseResultSalaryProjectionInnerDto> salaryByYearList =
+                buildSalaryByYearList(monthlyChosen, currentYear, retireYear); // <-- START OD currentYear
+
+        // Scenariusz odroczenia – licz na bazie „actual”
+        List<PensionCalculationResponseResultIfPostponedYearsInnerDto> postponed = new ArrayList<>();
+        if (req.getAdditionalWorkYears() != null && req.getAdditionalWorkYears().isPresent()) {
+            int add = Math.max(0, req.getAdditionalWorkYears().get());
+            if (add > 0) {
+                var alt = new PensionCalculationResponseResultIfPostponedYearsInnerDto();
+                alt.setPostponedByYears(add);
+                double potAtBase = includeSick ? accIncl.pot : accExcl.pot;
+                double postponedMonthly = simulatePostponementMonthly(
+                        req, add, monthlyChosen, retireYear, potAtBase, contract
+                );
+                alt.setActualAmountPLN((float) round2(postponedMonthly));
+                postponed.add(alt);
             }
+        }
 
-            // wynagrodzenia (miesięczne – już były)
-            trySetNumberFlexible(result, "setWageInclSickLeavePLN",           scale2(out.wageInclSickMonthly()));
-            trySetNumberFlexible(result, "setWageInclSickLeavePln",           scale2(out.wageInclSickMonthly()));
-            trySetNumberFlexible(result, "setWageExclSickLeavePLN",           scale2(out.wageExclSickMonthly()));
-            trySetNumberFlexible(result, "setWageExclSickLeavePln",           scale2(out.wageExclSickMonthly()));
+        // Oczekiwania użytkownika – zakładamy wartości MIESIĘCZNE (nominal)
+        var meets = new PensionCalculationResponseResultMeetsExpectationDto();
+        Float expected = req.getExpectedPensionPLN();
+        if (expected != null) {
+            boolean isMet = monthlyPensionNominalActual + 1e-6 >= expected;
+            meets.setIsMet(isMet);
+            if (!isMet) {
+                meets.setShortfallPLN(JsonNullable.of((float) round2(expected - monthlyPensionNominalActual)));
+                int extraYears = estimateExtraYearsToMeetMonthly(
+                        req, monthlyChosen, retireYear, includeSick ? accIncl.pot : accExcl.pot, expected, contract
+                );
+                meets.setExtraYearsRequiredEstimate(JsonNullable.of(extraYears));
+            }
+        } else {
+            meets.setIsMet(null);
+        }
 
-            // ifPostponedYears – LISTA [{year, actualAmountPLN (MIESIĘCZNIE)}]
-            List<Object> asList = new ArrayList<>();
-            out.postponed().forEach((k,vMonthly) -> {
-                Map<String,Object> item = new LinkedHashMap<>();
-                item.put("actualAmountPLN", scale2(vMonthly));
-                item.put("year", k);
-                asList.add(item);
-            });
-            tryInvoke(result, "setIfPostponedYears", new Class[]{List.class}, new Object[]{asList});
+        // Budowa odpowiedzi
+        PensionCalculationResponseResultDto result = new PensionCalculationResponseResultDto();
 
-            // meetsExpectation – MIESIĘCZNY vs MIESIĘCZNY expected
-            if (req.getExpectedPensionPLN()!=null && req.getExpectedPensionPLN()>0f) {
-                double expectedMonthly = req.getExpectedPensionPLN();
-                double actualMonthly   = scale2(out.actualMonthly()).doubleValue();
-                boolean met = actualMonthly >= expectedMonthly;
-                Integer extra = null;
-                var p1 = out.postponed().get("1");
-                var p2 = out.postponed().get("2");
-                var p5 = out.postponed().get("5");
-                if (!met) {
-                    if (p1!=null && p1.doubleValue()>=expectedMonthly) extra=1;
-                    else if (p2!=null && p2.doubleValue()>=expectedMonthly) extra=2;
-                    else if (p5!=null && p5.doubleValue()>=expectedMonthly) extra=5;
+        // actual = miesięczna emerytura (nominal) zgodna z flagą includeSickLeave
+        result.setActualAmountPLN((float) round2(monthlyPensionNominalActual));
+        result.setRealAmountDeflated((float) round2(monthlyPensionRealToday));
+
+        // „wage*” = miesięczna emerytura z/bez chorobowego
+        result.setWageInclSickLeavePLN((float) round2(monthlyPensionNominalIncl));
+        result.setWageExclSickLeavePLN((float) round2(monthlyPensionNominalExcl));
+
+        // Dodatkowe metryki
+        result.setReplacementRatePct((float) round2(replacementRatePct));
+        result.setVsAverageInRetirementYearPct((float) round2(vsAvgPct));
+        result.setIfPostponedYears(postponed);
+        result.setMeetsExpectation(meets);
+
+        // Timelines
+        result.setZusAccountFundsByYear(potTimelineActual);               // „actual” pot timeline
+        result.setSalaryProjection(salaryByYearList);                         // salaryProjection: od currentYear
+
+        PensionCalculationResponseDto response = new PensionCalculationResponseDto();
+        response.setId(UUID.randomUUID().toString());
+        response.setRequestedAt(OffsetDateTime.now());
+        response.setResult(result);
+        return response;
+    }
+
+    // === Helpers ===
+
+    private static void validate(PensionCalculationRequestDto req) {
+        if (req.getAge() == null || req.getSex() == null || req.getGrossSalaryPLN() == null
+                || req.getStartYear() == null || req.getPlannedEndYear() == null) {
+            throw new IllegalArgumentException("Missing required fields in PensionCalculationRequestDto");
+        }
+        if (req.getPlannedEndYear() < LocalDate.now().getYear()) {
+            throw new IllegalArgumentException("plannedEndYear must be >= current year");
+        }
+        if (req.getStartYear() > req.getPlannedEndYear()) {
+            throw new IllegalArgumentException("startYear must be <= plannedEndYear");
+        }
+    }
+
+    private static double asDouble(Number n) {
+        return n == null ? 0.0 : n.doubleValue();
+    }
+
+    private static double sickAdjustmentFactor(int sickDays, double sickReplacementRate) {
+        if (sickDays <= 0) return 1.0;
+        double sickShare = Math.min(1.0, Math.max(0.0, sickDays / (double) WORKING_DAYS_PER_YEAR));
+        return 1.0 - sickShare * (1.0 - sickReplacementRate);
+    }
+
+    // Buduje roczną ścieżkę miesięcznej płacy EXCL od startYear do retireYear, zakotwiczoną w currentYear
+    private Map<Integer, Double> buildYearlyBaseline(int startYear,
+                                                     int currentYear,
+                                                     int retireYear,
+                                                     double monthlyGrossCurrent) {
+        Map<Integer, Double> base = new LinkedHashMap<>();
+
+        // 1) zakotwicz bieżący rok (grossSalaryPLN = płaca TERAZ)
+        double m = monthlyGrossCurrent;
+        base.put(currentYear, round2(m));
+
+        // 2) wstecz do startYear (odwijanie wzrostu)
+        for (int y = currentYear - 1; y >= startYear; y--) {
+            double g = macro.nominalWageGrowth(y); // growth y->y+1
+            m = m / (1.0 + g);
+            base.put(y, round2(m));
+        }
+
+        // 3) w przód do retireYear (projekcja z bieżącej pensji)
+        m = monthlyGrossCurrent;
+        for (int y = currentYear + 1; y <= retireYear; y++) {
+            double g = macro.nominalWageGrowth(y - 1); // growth y-1->y
+            m = m * (1.0 + g);
+            base.put(y, round2(m));
+        }
+        return base;
+    }
+
+    // Parsuje listę changes z nową strukturą
+    private List<ChangeSpan> parseChanges(List<PensionCalculationRequestAdditionalSalaryChangesInnerDto> raw) {
+        List<ChangeSpan> out = new ArrayList<>();
+        if (raw == null) return out;
+
+        for (Object ch : raw) {
+            try {
+                Object ct = ch.getClass().getMethod("getChangeType").invoke(ch); // enum lub String
+                String typeStr = String.valueOf(ct);
+                ChangeType type = "BREAK".equalsIgnoreCase(typeStr) ? ChangeType.BREAK : ChangeType.WORK;
+
+                Object sd = ch.getClass().getMethod("getStartDate").invoke(ch);
+                Object ed = ch.getClass().getMethod("getEndDate").invoke(ch);
+                OffsetDateTime start = castToODT(sd);
+                OffsetDateTime end = castToODT(ed);
+                if (start == null || end == null) continue;
+
+                Double salary = null;
+                if (type == ChangeType.WORK) {
+                    Object sal = ch.getClass().getMethod("getSalary").invoke(ch);
+                    if (sal instanceof Number) salary = ((Number) sal).doubleValue();
                 }
-                Object meets = tryConstructParamOf(result, "setMeetsExpectation");
-                if (meets != null) {
-                    tryInvoke(meets, "setIsMet", new Class[]{Boolean.class}, new Object[]{met});
-                    if (!met) {
-                        BigDecimal shortfall = scale2(BigDecimal.valueOf(expectedMonthly - actualMonthly));
-                        if (!( trySetNumberFlexible(meets, "setShortfallPLN", shortfall)
-                                || trySetNumberFlexible(meets, "setShortfallPln", shortfall))) {
-                            // pomijamy
-                        }
+
+                out.add(new ChangeSpan(type, start.toLocalDate(), end.toLocalDate(), salary));
+            } catch (Throwable ignored) {
+                // pomijamy rekord jeśli forma DTO się różni
+            }
+        }
+        return out;
+    }
+
+    private OffsetDateTime castToODT(Object o) {
+        if (o == null) return null;
+        if (o instanceof OffsetDateTime odt) return odt;
+        if (o instanceof String s) {
+            try { return OffsetDateTime.parse(s); } catch (Exception ignored) { return null; }
+        }
+        return null;
+    }
+
+    private void applyChangesToMonthlyGrid(List<ChangeSpan> changes,
+                                           Map<YearMonth, Double> monthlyExcl,
+                                           Map<YearMonth, Double> monthlyIncl,
+                                           int startYear, int retireYear,
+                                           boolean sickEligible, double sickFactor) {
+        if (changes == null || changes.isEmpty()) return;
+
+        for (ChangeSpan c : changes) {
+            YearMonth from = YearMonth.from(c.start());
+            YearMonth to = YearMonth.from(c.end());
+            // znormalizuj zakres do [startYear..retireYear]
+            YearMonth min = YearMonth.of(startYear, 1);
+            YearMonth max = YearMonth.of(retireYear, 12);
+            if (to.isBefore(min) || from.isAfter(max)) continue;
+            if (from.isBefore(min)) from = min;
+            if (to.isAfter(max)) to = max;
+
+            YearMonth cursor = from;
+            while (!cursor.isAfter(to)) {
+                if (c.type() == ChangeType.BREAK) {
+                    monthlyExcl.put(cursor, 0.0);
+                    monthlyIncl.put(cursor, 0.0);
+                } else { // WORK
+                    if (c.salary() != null) {
+                        double s = round2(c.salary());
+                        monthlyExcl.put(cursor, s);
+                        monthlyIncl.put(cursor, sickEligible ? round2(s * sickFactor) : s);
                     }
-                    if (extra!=null) tryInvoke(meets, "setExtraYearsRequiredEstimate", new Class[]{Integer.class}, new Object[]{extra});
-                    tryInvoke(result, "setMeetsExpectation", new Class[]{meets.getClass()}, new Object[]{meets});
                 }
+                cursor = cursor.plusMonths(1);
             }
+        }
+    }
 
-            tryInvoke(resp, "setResult", new Class[]{result.getClass()}, new Object[]{result});
+    private AccumResult accumulateFromMonthly(int fromYear,
+                                              int toYear,
+                                              double startingFunds,
+                                              Map<YearMonth, Double> monthly,
+                                              double pensionBaseFactor) {
+        List<PensionCalculationResponseResultZusAccountFundsByYearInnerDto> potTimeline = new ArrayList<>();
+        double pot = startingFunds;
+        for (int y = fromYear; y <= toYear; y++) {
+            double sumMonths = 0.0;
+            for (int m = 1; m <= 12; m++) {
+                sumMonths += monthly.getOrDefault(YearMonth.of(y, m), 0.0);
+            }
+            double annualBase = sumMonths * pensionBaseFactor;
+            double annualContrib = annualBase * EFFECTIVE_PENSION_CONTRIB_RATE;
+
+            double cap = macro.accountIndexationYoY(y); // łagodniejsza od pełnego nominalu
+            pot = pot * (1.0 + cap) + annualContrib;
+
+            var row = new PensionCalculationResponseResultZusAccountFundsByYearInnerDto();
+            row.setYear(y);
+            row.setZusAccountFundsPLN((float) round2(pot));
+            potTimeline.add(row);
+        }
+        return new AccumResult(pot, potTimeline);
+    }
+
+    // Odroczenie: rozszerzamy miesięczną siatkę na nowe lata wg wzrostu nominalnego
+    private double simulatePostponementMonthly(PensionCalculationRequestDto req,
+                                               int addYears,
+                                               Map<YearMonth, Double> monthlyChosen, // siatka „actual” (incl/excl)
+                                               int baseRetireYear,
+                                               double potAtBaseRetirement,
+                                               ContractParams contract) {
+
+        int currentYear = LocalDate.now().getYear();
+        int newRetireYear = baseRetireYear + addYears;
+
+        // sklonuj wartości dla lat > baseRetireYear
+        Map<YearMonth, Double> extended = new LinkedHashMap<>(monthlyChosen);
+        for (int y = baseRetireYear + 1; y <= newRetireYear; y++) {
+            double growth = macro.nominalWageGrowth(y - 1);
+            for (int m = 1; m <= 12; m++) {
+                YearMonth prevYm = YearMonth.of(y - 1, m);
+                YearMonth ym = YearMonth.of(y, m);
+                double prev = extended.getOrDefault(prevYm, 0.0);
+                extended.put(ym, round2(prev * (1.0 + growth)));
+            }
         }
 
-        return resp;
+        // policz dodatkowe lata
+        double pot = potAtBaseRetirement;
+        for (int y = baseRetireYear + 1; y <= newRetireYear; y++) {
+            double sumMonths = 0.0;
+            for (int m = 1; m <= 12; m++) {
+                sumMonths += extended.getOrDefault(YearMonth.of(y, m), 0.0);
+            }
+            double annualBase = sumMonths * contract.pensionBaseFactor;
+            double annualContrib = annualBase * EFFECTIVE_PENSION_CONTRIB_RATE;
+
+            double cap = macro.accountIndexationYoY(y);
+            pot = pot * (1.0 + cap) + annualContrib;
+        }
+
+        int yearsToRetire = Math.max(0, newRetireYear - currentYear);
+        int ageAtRetire = req.getAge() + yearsToRetire;
+        double payoutYears = life.annuityDivisor(ageAtRetire, req.getSex());
+        return (pot / Math.max(1e-9, payoutYears)) / 12.0;
+    }
+
+    private int estimateExtraYearsToMeetMonthly(PensionCalculationRequestDto req,
+                                                Map<YearMonth, Double> monthlyChosen, // incl lub excl
+                                                int baseRetireYear,
+                                                double potAtBaseRetirement,
+                                                double expectedMonthly,
+                                                ContractParams contract) {
+        for (int add = 1; add <= 15; add++) {
+            double p = simulatePostponementMonthly(req, add, monthlyChosen, baseRetireYear, potAtBaseRetirement, contract);
+            if (p + 1e-6 >= expectedMonthly) return add;
+        }
+        return 15;
+    }
+
+    private List<PensionCalculationResponseResultSalaryProjectionInnerDto> buildSalaryByYearList(
+            Map<YearMonth, Double> monthlyChosen, int fromYear, int toYear) {
+        List<PensionCalculationResponseResultSalaryProjectionInnerDto> out = new ArrayList<>();
+        for (int y = fromYear; y <= toYear; y++) {
+            double sum = 0.0;
+            for (int m = 1; m <= 12; m++) {
+                sum += monthlyChosen.getOrDefault(YearMonth.of(y, m), 0.0);
+            }
+            PensionCalculationResponseResultSalaryProjectionInnerDto row =
+                    new PensionCalculationResponseResultSalaryProjectionInnerDto();
+            row.setYear(y);
+            row.setSalary((float) round2(sum / 12));
+            out.add(row);
+        }
+        return out;
+    }
+
+    private static double round2(double v) {
+        return BigDecimal.valueOf(v).setScale(2, RoundingMode.HALF_UP).doubleValue();
+    }
+
+    // === Makro-ścieżki & tablice życia ===
+
+    public static class MacroPaths {
+        /** Nominalny wzrost płac: CPI + real wage (additive aprox). */
+        public double nominalWageGrowth(int year) {
+            double cpi = cpiYoY(year);
+            double real = realWageYoY(year);
+            return cpi + real;
+        }
+
+        public double cpiYoY(int year) {
+            if (year <= 2023) return 0.098;
+            if (year == 2024) return 0.048;
+            if (year == 2025) return 0.031;
+            return 0.025; // 2026+
+        }
+
+        public double realWageYoY(int year) {
+            if (year <= 2024) return (year == 2023) ? 0.003 : 0.034;
+            if (year <= 2027) return switch (year) {
+                case 2025 -> 0.037;
+                case 2026 -> 0.035;
+                case 2027 -> 0.030;
+                default -> 0.030;
+            };
+            if (year <= 2032) return 0.029;
+            if (year <= 2035) return 0.028;
+            if (year <= 2040) return 0.027;
+            if (year <= 2045) return 0.026;
+            if (year <= 2050) return 0.025;
+            if (year <= 2055) return 0.024;
+            if (year <= 2060) return 0.024;
+            if (year <= 2065) return 0.023;
+            if (year <= 2070) return 0.022;
+            if (year <= 2075) return 0.021;
+            return 0.020;
+        }
+
+        /** Deflator po ścieżce NOMINALNEGO wzrostu wynagrodzeń (z roku retireYear do todayYear). */
+        public double deflatorByNominalWage(int retireYear, int todayYear) {
+            if (retireYear <= todayYear) return 1.0;
+            double d = 1.0;
+            for (int y = todayYear; y < retireYear; y++) d *= (1.0 + nominalWageGrowth(y));
+            return d;
+        }
+
+        /** Indeksacja konta: łagodniejsza niż pełny wzrost płac (CPI + alpha * real). */
+        public double accountIndexationYoY(int year) {
+            return cpiYoY(year) + ACCOUNT_INDEXATION_REAL_SHARE * realWageYoY(year);
+        }
+
+        /** Projekcja średniej miesięcznej emerytury (nominal), do podmiany na serię z danych. */
+        public double projectAveragePension(int year) {
+            double avg = AVG_PENSION_BASE_YEAR_AMOUNT; // PLN/mies.
+            int y0 = AVG_PENSION_BASE_YEAR;
+            if (year <= y0) return avg;
+            for (int y = y0; y < year; y++) {
+                double idx = cpiYoY(y) + 0.20 * realWageYoY(y); // indeksacja świadczeń ~ CPI + 20% real
+                avg *= (1.0 + idx);
+            }
+            return avg;
+        }
+    }
+
+    /**
+     * Przybliżona tablica życia → zwraca spodziewaną liczbę LAT wypłaty.
+     * Podniesione wartości bazowe + łagodniejszy spadek na rok → niższa emerytura m/m.
+     */
+    public static class LifeTables {
+        public double annuityDivisor(int ageAtRetirement, PensionCalculationRequestDto.SexEnum sex) {
+            double baseYears;
+            int baseAge;
+            if (sex == PensionCalculationRequestDto.SexEnum.F) {
+                baseAge = 60;
+                baseYears = 26.0; // było 24.0
+            } else {
+                baseAge = 65;
+                baseYears = 23.0; // było 20.0
+            }
+            int extra = Math.max(0, ageAtRetirement - baseAge);
+            double years = baseYears - 0.55 * extra; // było 0.70
+            return Math.max(15.0, years); // min 15 lat
+        }
+    }
+
+    // === Parametry zależne od kontraktu ===
+
+    private static class ContractParams {
+        final double pensionBaseFactor;   // część wynagrodzenia podlegająca oskładkowaniu emerytalnemu (0..1)
+        final boolean sickEligible;       // czy w ogóle występuje „chorobowe”
+        final double sickReplacementRate; // jaki % płacy jest wypłacany w chorobie (0..1)
+
+        ContractParams(double pensionBaseFactor, boolean sickEligible, double sickReplacementRate) {
+            this.pensionBaseFactor = pensionBaseFactor;
+            this.sickEligible = sickEligible;
+            this.sickReplacementRate = sickReplacementRate;
+        }
+    }
+
+    private ContractParams resolveContractParams(PensionCalculationRequestDto.ContractTypeEnum ct) {
+        if (ct == null) {
+            // Domyślnie jak umowa o pracę
+            return new ContractParams(1.0, true, 0.80);
+        }
+        switch (ct) {
+            case UMOWA_O_PRACE:
+                return new ContractParams(1.0, true, 0.80);
+            case UMOWA_ZLECENIE:
+                // Upraszczająco: część zleceń ma pełne składki, część nie – bierzemy 0.80 i 0.80 chorobowe
+                return new ContractParams(0.80, true, 0.80);
+            case B2_B:
+                // Upraszczająco: składki od ~60% wynagrodzenia; brak chorobowego
+                return new ContractParams(0.60, false, 0.00);
+            case UMOWA_O_DZIELO:
+                // Brak składek emerytalnych i chorobowego
+                return new ContractParams(0.00, false, 0.00);
+            default:
+                return new ContractParams(1.0, true, 0.80);
+        }
     }
 
     public void enterPostalCodeForCalculation(String calculationId, PostalCodeUpdateRequestDto body) {
@@ -168,137 +551,17 @@ public class CalculationFacade {
         pensionCalculationRepository.saveAndFlush(calc);
     }
 
-    /* ===================== helpers ===================== */
+    // === Typy pomocnicze do obsługi zmian ===
 
-    /**
-     * Parse contract type from request DTO
-     */
-    private PensionCalculatorService.ContractType parseContractType(
-            PensionCalculationRequestDto.ContractTypeEnum contractTypeEnum) {
-        if (contractTypeEnum == null) {
-            return PensionCalculatorService.ContractType.UMOWA_O_PRACE; // Default to employment contract
+    private enum ChangeType { BREAK, WORK }
+
+    private record ChangeSpan(ChangeType type, LocalDate start, LocalDate end, Double salary) { }
+
+    private static class AccumResult {
+        final double pot;
+        final List<PensionCalculationResponseResultZusAccountFundsByYearInnerDto> timeline;
+        AccumResult(double pot, List<PensionCalculationResponseResultZusAccountFundsByYearInnerDto> timeline) {
+            this.pot = pot; this.timeline = timeline;
         }
-
-        return switch (contractTypeEnum) {
-            case B2_B -> PensionCalculatorService.ContractType.B2B;
-            case UMOWA_O_PRACE -> PensionCalculatorService.ContractType.UMOWA_O_PRACE;
-            case UMOWA_ZLECENIE -> PensionCalculatorService.ContractType.UMOWA_ZLECENIE;
-            case UMOWA_O_DZIELO -> PensionCalculatorService.ContractType.UMOWA_O_DZIELO;
-        };
-    }
-
-    /**
-     * Parse work breaks from additionalSalaryChanges (BREAK type entries)
-     */
-    private List<PensionCalculatorService.WorkBreak> parseWorkBreaks(PensionCalculationRequestDto req) {
-        if (req.getAdditionalSalaryChanges() == null || req.getAdditionalSalaryChanges().isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        List<PensionCalculatorService.WorkBreak> breaks = new ArrayList<>();
-        for (var change : req.getAdditionalSalaryChanges()) {
-            // Check if this is a BREAK type change
-            String changeType = getChangeType(change);
-            if ("BREAK".equalsIgnoreCase(changeType)) {
-                OffsetDateTime startDate = getStartDate(change);
-                OffsetDateTime endDate = getEndDate(change);
-
-                if (startDate != null && endDate != null) {
-                    int startYear = startDate.getYear();
-                    int endYear = endDate.getYear();
-                    breaks.add(new PensionCalculatorService.WorkBreak(startYear, endYear));
-                }
-            }
-        }
-        return breaks;
-    }
-
-    private String getChangeType(Object change) {
-        try {
-            Method m = change.getClass().getMethod("getChangeType");
-            Object result = m.invoke(change);
-            return result != null ? result.toString() : null;
-        } catch (Exception ignore) {
-            return null;
-        }
-    }
-
-    private OffsetDateTime getStartDate(Object change) {
-        try {
-            Method m = change.getClass().getMethod("getStartDate");
-            return (OffsetDateTime) m.invoke(change);
-        } catch (Exception ignore) {
-            return null;
-        }
-    }
-
-    private OffsetDateTime getEndDate(Object change) {
-        try {
-            Method m = change.getClass().getMethod("getEndDate");
-            return (OffsetDateTime) m.invoke(change);
-        } catch (Exception ignore) {
-            return null;
-        }
-    }
-
-    private static BigDecimal toBD(Float f){ return f==null? null : BigDecimal.valueOf(f.doubleValue()); }
-    private static <T> T fromJN(JsonNullable<T> jn){ return (jn!=null && jn.isPresent())? jn.get() : null; }
-    private static double dbl(Float f){ return f==null?0d:f.doubleValue(); }
-    private static BigDecimal scale2(BigDecimal x){ return x.setScale(2, RoundingMode.HALF_UP); }
-    private static BigDecimal scale1(BigDecimal x){ return x.setScale(1, RoundingMode.HALF_UP); }
-
-    private static void trySet(Object target, String field, Object val){
-        try { var f=target.getClass().getDeclaredField(field); f.setAccessible(true); f.set(target, val); } catch (Exception ignore){}
-    }
-
-    private static boolean tryInvoke(Object target, String method, Class<?>[] types, Object[] args){
-        try { Method m = target.getClass().getMethod(method, types); m.setAccessible(true); m.invoke(target, args); return true; }
-        catch (Exception ignore){ return false; }
-    }
-
-    private static Object tryConstructParamOf(Object target, String setterName){
-        try {
-            for (Method m : target.getClass().getMethods()){
-                if (m.getName().equals(setterName) && m.getParameterCount()==1){
-                    Class<?> p = m.getParameterTypes()[0];
-                    try {
-                        Constructor<?> c = p.getDeclaredConstructor();
-                        c.setAccessible(true);
-                        return c.newInstance();
-                    } catch (Exception ignored) {
-                        return null;
-                    }
-                }
-            }
-        } catch (Exception ignore){}
-        return null;
-    }
-
-    /** Elastyczne ustawianie liczb – dopasowuje BigDecimal do parametru settera (BigDecimal/Double/Float/Integer/Long/prymitywy). */
-    private static boolean trySetNumberFlexible(Object target, String setterName, BigDecimal value){
-        Method[] methods = target.getClass().getMethods();
-        for (Method m : methods){
-            if (!m.getName().equals(setterName) || m.getParameterCount()!=1) continue;
-            Class<?> p = m.getParameterTypes()[0];
-            Object coerced = coerceNumber(p, value);
-            if (coerced == COERCE_UNSUPPORTED) continue;
-            try {
-                m.setAccessible(true);
-                m.invoke(target, coerced);
-                return true;
-            } catch (Exception ignore) { /* spróbuj kolejny wariant */ }
-        }
-        return false;
-    }
-
-    private static final Object COERCE_UNSUPPORTED = new Object();
-    private static Object coerceNumber(Class<?> param, BigDecimal v){
-        if (param == BigDecimal.class) return v;
-        if (param == Double.class || param == double.class) return v.doubleValue();
-        if (param == Float.class  || param == float.class ) return v.floatValue();
-        if (param == Integer.class|| param == int.class   ) return v.intValue();
-        if (param == Long.class   || param == long.class  ) return v.longValue();
-        if (Number.class.isAssignableFrom(param)) return v.doubleValue();
-        return COERCE_UNSUPPORTED;
     }
 }
