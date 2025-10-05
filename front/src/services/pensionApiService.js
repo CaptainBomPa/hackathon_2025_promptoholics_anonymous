@@ -36,10 +36,10 @@ const transformToApiRequest = (formData) => {
  */
 const transformContractType = (workType) => {
   const mapping = {
-    'employment': 'EMPLOYMENT_CONTRACT',
-    'mandate': 'MANDATE_CONTRACT', 
+    'employment': 'UMOWA_O_PRACE',
+    'mandate': 'UMOWA_ZLECENIE',
     'business': 'B2B',
-    'contract': 'CONTRACT_FOR_SPECIFIC_WORK',
+    'contract': 'UMOWA_O_DZIELO',
   };
   return mapping[workType] || 'EMPLOYMENT_CONTRACT';
 };
