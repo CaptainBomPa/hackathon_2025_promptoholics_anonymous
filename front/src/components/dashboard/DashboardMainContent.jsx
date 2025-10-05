@@ -8,7 +8,6 @@ import {
     LinearProgress,
     Skeleton,
     Alert,
-    Tooltip
 } from '@mui/material'
 import {
     TrendingUp,
@@ -20,6 +19,10 @@ import {
     HourglassBottom
 } from '@mui/icons-material'
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
+import { styled } from '@mui/material/styles'
+import { tooltipClasses } from '@mui/material/Tooltip'
+import Tooltip from '@mui/material/Tooltip'
 import { useDashboard } from '../../contexts/DashboardContext'
 import { zusColors } from '../../constants/zus-colors'
 import { formatCurrency } from '../../utils/pension-formatting'
@@ -28,6 +31,27 @@ import { useCountUp } from '../../hooks/useCountUp'
 
 const CARD_MIN_HEIGHT = 180
 
+/* ===== FancyTooltip (stylowana wersja MUI Tooltip) ===== */
+const FancyTooltip = styled(({ className, ...props }) => (
+    <Tooltip {...props} arrow classes={{ popper: className }} />
+))(({ theme }) => ({
+    [`& .${tooltipClasses.tooltip}`]: {
+        background:
+            theme.palette.mode === 'light'
+                ? 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,248,250,0.98) 100%)'
+                : 'linear-gradient(180deg, rgba(42,42,42,0.98) 0%, rgba(28,28,28,0.98) 100%)',
+        color: theme.palette.text.primary,
+        border: `1px solid ${theme.palette.divider}`,
+        boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+        borderRadius: 8,
+        padding: '10px 12px',
+        backdropFilter: 'blur(4px)',
+    },
+    [`& .${tooltipClasses.arrow}`]: {
+        color: zusColors.primary
+    }
+}))
+
 const DashboardMainContent = () => {
     const { state, computed } = useDashboard()
 
@@ -35,7 +59,9 @@ const DashboardMainContent = () => {
         <Box sx={{ flex: 1, p: { xs: 2, md: 3 }, minWidth: 0 }}>
             {computed.hasErrors && (
                 <Alert severity="error" sx={{ mb: 3 }}>
-                    <Typography variant="body2">Wykryto błędy w parametrach. Sprawdź ustawienia w panelu bocznym.</Typography>
+                    <Typography variant="body2">
+                        Wykryto błędy w parametrach. Sprawdź ustawienia w panelu bocznym.
+                    </Typography>
                 </Alert>
             )}
 
@@ -73,10 +99,15 @@ const DashboardMainContent = () => {
                         minWidth: 0
                     }}
                 >
-                    <SectionHeader icon={<Assessment />} title="Podsumowanie wyników" from={zusColors.primary} to={zusColors.info} />
+                    <SectionHeader
+                        icon={<Assessment />}
+                        title="Podsumowanie wyników"
+                        from={zusColors.primary}
+                        to={zusColors.info}
+                    />
 
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Tooltip title="Metryki bazują na aktualnych parametrach z panelu. Wartości mogą się zmieniać po korektach." arrow>
+                        <FancyTooltip title="Metryki bazują na aktualnych parametrach z panelu. Wartości mogą się zmieniać po korektach.">
                             <Typography
                                 variant="caption"
                                 sx={{
@@ -84,25 +115,31 @@ const DashboardMainContent = () => {
                                     py: 0.75,
                                     borderRadius: 1,
                                     border: `1px solid ${zusColors.info}33`,
-                                    backgroundColor: `${zusColors.info}10`,
-                                    color: zusColors.dark,
+                                    // backgroundColor: `${zusColors.info}10`,
+                                    // color: zusColors.dark,
                                     fontWeight: 600,
-                                    whiteSpace: 'nowrap'
+                                    whiteSpace: 'nowrap',
+                                    cursor: 'help'
                                 }}
                             >
                                 Aktualne parametry
                             </Typography>
-                        </Tooltip>
+                        </FancyTooltip>
                     </Box>
                 </Box>
 
+                {/* === METRICS GRID === */}
                 <Box
                     sx={{
                         display: 'grid',
                         gap: 2.5,
                         alignItems: 'stretch',
                         gridAutoFlow: 'row dense',
-                        gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', xl: 'repeat(4, minmax(0, 1fr))' },
+                        gridTemplateColumns: {
+                            xs: '1fr',
+                            sm: 'repeat(2, minmax(0, 1fr))',
+                            xl: 'repeat(4, minmax(0, 1fr))'
+                        },
                         minWidth: 0
                     }}
                 >
@@ -115,6 +152,7 @@ const DashboardMainContent = () => {
                         loading={state.uiState.isCalculating}
                         valueFormatter={(v) => formatCurrency(Math.round(v))}
                         trend={state.results?.realAmountDeflatedDeltaPct}
+                        tooltip="Kwota emerytury przeliczona do dzisiejszych cen (po inflacji). Pokazuje realną siłę nabywczą świadczenia."
                     />
 
                     <MetricCard
@@ -126,6 +164,7 @@ const DashboardMainContent = () => {
                         loading={state.uiState.isCalculating}
                         valueFormatter={(v) => formatCurrency(Math.round(v))}
                         trend={state.results?.nominalDeltaPct}
+                        tooltip="Prognozowana kwota w cenach z roku przejścia na emeryturę (bez deflowania). To „kwota na pasku” w przyszłości."
                     />
 
                     <MetricCard
@@ -137,6 +176,7 @@ const DashboardMainContent = () => {
                         loading={state.uiState.isCalculating}
                         isPercentage
                         trend={state.results?.replacementDeltaPct}
+                        tooltip="Procent pierwszej emerytury względem ostatniego wynagrodzenia w modelu. Pomaga ocenić utrzymanie poziomu dochodów."
                     />
 
                     <MetricCard
@@ -144,15 +184,21 @@ const DashboardMainContent = () => {
                         value={state.results.vsAverageInRetirementYearPct ?? 12.3}
                         subtitle="p.p. różnicy względem średniej"
                         icon={<Timeline />}
-                        color={(state.results.vsAverageInRetirementYearPct ?? 0) >= 0 ? zusColors.success : zusColors.error}
+                        color={
+                            (state.results.vsAverageInRetirementYearPct ?? 0) >= 0
+                                ? zusColors.success
+                                : zusColors.error
+                        }
                         loading={state.uiState.isCalculating}
                         isPercentage
                         showSign
                         trend={state.results?.vsAverageDeltaPct}
+                        tooltip="Różnica (w p.p.) Twojej stopy zastąpienia względem prognozowanej średniej w roku przejścia na emeryturę. Dodatnia = powyżej średniej."
                     />
                 </Box>
             </Box>
 
+            {/* === CHARTS === */}
             <Box sx={{ mb: 4 }}>
                 <Box sx={{ mb: 4 }}>
                     <Paper
@@ -167,12 +213,24 @@ const DashboardMainContent = () => {
                             border: `1px solid ${zusColors.primary}20`,
                             boxShadow: `0 8px 32px ${zusColors.primary}15`,
                             transition: 'all 0.3s ease-in-out',
-                            '&:hover': { boxShadow: `0 12px 40px ${zusColors.primary}25`, transform: 'translateY(-2px)' }
+                            '&:hover': {
+                                boxShadow: `0 12px 40px ${zusColors.primary}25`,
+                                transform: 'translateY(-2px)'
+                            }
                         }}
                     >
-                        <SectionHeader icon={<MonetizationOnIcon />} title="Wzrost środków na koncie ZUS" from={zusColors.primary} to={zusColors.success} sx={{ mb: 3 }} />
+                        <SectionHeader
+                            icon={<MonetizationOnIcon />}
+                            title="Wzrost środków na koncie ZUS"
+                            from={zusColors.primary}
+                            to={zusColors.success}
+                            sx={{ mb: 3 }}
+                        />
                         <Box sx={{ width: '100%' }}>
-                            <ZUSAccountGrowthChart data={state.results.accountGrowthProjection} loading={state.uiState.isCalculating} />
+                            <ZUSAccountGrowthChart
+                                data={state.results.accountGrowthProjection}
+                                loading={state.uiState.isCalculating}
+                            />
                         </Box>
                     </Paper>
                 </Box>
@@ -190,17 +248,30 @@ const DashboardMainContent = () => {
                             border: `1px solid ${zusColors.info}20`,
                             boxShadow: `0 8px 32px ${zusColors.info}15`,
                             transition: 'all 0.3s ease-in-out',
-                            '&:hover': { boxShadow: `0 12px 40px ${zusColors.info}25`, transform: 'translateY(-2px)' }
+                            '&:hover': {
+                                boxShadow: `0 12px 40px ${zusColors.info}25`,
+                                transform: 'translateY(-2px)'
+                            }
                         }}
                     >
-                        <SectionHeader icon={<Timeline />} title="Projekcja wynagrodzeń" from={zusColors.info} to={zusColors.secondary} sx={{ mb: 3 }} />
+                        <SectionHeader
+                            icon={<Timeline />}
+                            title="Projekcja wynagrodzeń"
+                            from={zusColors.info}
+                            to={zusColors.secondary}
+                            sx={{ mb: 3 }}
+                        />
                         <Box sx={{ width: '100%' }}>
-                            <SalaryProjectionChart data={state.results.salaryProjection} loading={state.uiState.isCalculating} />
+                            <SalaryProjectionChart
+                                data={state.results.salaryProjection}
+                                loading={state.uiState.isCalculating}
+                            />
                         </Box>
                     </Paper>
                 </Box>
             </Box>
 
+            {/* === DODATKOWE KARTY === */}
             {(() => {
                 const cards = []
                 if (state.parameters.sickLeave?.mode !== 'none') {
@@ -227,7 +298,13 @@ const DashboardMainContent = () => {
                         />
                     )
                 }
-                cards.push(<ExpectationStatusCard key="expect" meetsExpectation={state.results?.meetsExpectation} loading={state.uiState.isCalculating} />)
+                cards.push(
+                    <ExpectationStatusCard
+                        key="expect"
+                        meetsExpectation={state.results?.meetsExpectation}
+                        loading={state.uiState.isCalculating}
+                    />
+                )
                 return cards.length ? (
                     <Box
                         sx={{
@@ -235,7 +312,10 @@ const DashboardMainContent = () => {
                             display: 'grid',
                             gap: 3,
                             alignItems: 'stretch',
-                            gridTemplateColumns: { xs: '1fr', sm: 'repeat(auto-fit, minmax(320px, 1fr))' }
+                            gridTemplateColumns: {
+                                xs: '1fr',
+                                sm: 'repeat(auto-fit, minmax(320px, 1fr))'
+                            }
                         }}
                     >
                         {cards}
@@ -245,6 +325,8 @@ const DashboardMainContent = () => {
         </Box>
     )
 }
+
+/* === POMOCNICZE KOMPONENTY === */
 
 const TrendChip = ({ trend }) => {
     if (trend == null || Number.isNaN(trend)) return null
@@ -273,7 +355,19 @@ const TrendChip = ({ trend }) => {
     )
 }
 
-const MetricCard = ({ title, value, subtitle, icon, color, loading = false, isPercentage = false, showSign = false, valueFormatter, trend }) => {
+const MetricCard = ({
+                        title,
+                        value,
+                        subtitle,
+                        icon,
+                        color,
+                        loading = false,
+                        isPercentage = false,
+                        showSign = false,
+                        valueFormatter,
+                        trend,
+                        tooltip
+                    }) => {
     const numericValue = Number(value) || 0
     const decimals = isPercentage ? 1 : 0
     const animatedValue = useCountUp(numericValue, 1500, decimals, !loading)
@@ -326,6 +420,14 @@ const MetricCard = ({ title, value, subtitle, icon, color, loading = false, isPe
                     >
                         {title}
                     </Typography>
+                    {tooltip && !loading && (
+                        <FancyTooltip title={tooltip}>
+                            <InfoOutlinedIcon
+                                aria-label={`Informacja: ${title}`}
+                                sx={{ ml: 1, fontSize: 18, opacity: 0.75, cursor: 'help', flexShrink: 0 }}
+                            />
+                        </FancyTooltip>
+                    )}
                     {!loading && <TrendChip trend={trend} />}
                 </Box>
 
@@ -347,13 +449,7 @@ const MetricCard = ({ title, value, subtitle, icon, color, loading = false, isPe
                                     WebkitBackgroundClip: 'text',
                                     WebkitTextFillColor: 'transparent',
                                     mb: 0.5,
-                                    fontSize: { xs: '1.65rem', sm: '1.85rem', md: '2rem' },
-                                    animation: animatedValue !== numericValue ? 'countUpPulse 0.3s ease-in-out' : 'none',
-                                    '@keyframes countUpPulse': {
-                                        '0%': { transform: 'scale(1)' },
-                                        '50%': { transform: 'scale(1.02)' },
-                                        '100%': { transform: 'scale(1)' }
-                                    }
+                                    fontSize: { xs: '1.65rem', sm: '1.85rem', md: '2rem' }
                                 }}
                             >
                                 {formatVal(animatedValue)}
@@ -496,20 +592,17 @@ const WorkAfterRetirementCard = ({ workAfterRetirement, postponedData, currentPe
             const first = sorted[0]
             const last = sorted[sorted.length - 1]
             if (workAfterRetirement <= first.years) {
-                const p1 = sorted[0],
-                    p2 = sorted[1]
+                const p1 = sorted[0], p2 = sorted[1]
                 const slope = (p2.amount - p1.amount) / ((p2.years - p1.years) || 1)
                 return p1.amount + slope * (workAfterRetirement - p1.years)
             }
             if (workAfterRetirement >= last.years) {
-                const p1 = sorted[sorted.length - 2],
-                    p2 = last
+                const p1 = sorted[sorted.length - 2], p2 = last
                 const slope = (p2.amount - p1.amount) / ((p2.years - p1.years) || 1)
                 return p2.amount + slope * (workAfterRetirement - p2.years)
             }
             for (let i = 0; i < sorted.length - 1; i++) {
-                const p1 = sorted[i],
-                    p2 = sorted[i + 1]
+                const p1 = sorted[i], p2 = sorted[i + 1]
                 if (workAfterRetirement >= p1.years && workAfterRetirement <= p2.years) {
                     const ratio = (workAfterRetirement - p1.years) / ((p2.years - p1.years) || 1)
                     return p1.amount + ratio * (p2.amount - p1.amount)
@@ -526,7 +619,7 @@ const WorkAfterRetirementCard = ({ workAfterRetirement, postponedData, currentPe
 
     return (
         <Paper elevation={0} sx={{ width: '100%', p: 3, borderRadius: 1, bgcolor: '#fff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 10px 30px rgba(0,0,0,0.06)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center,', gap: 1.5, mb: 2 }}>
                 <Box sx={{ width: 44, height: 44, borderRadius: 2, display: 'grid', placeItems: 'center', bgcolor: zusColors.primary, color: '#fff', boxShadow: `0 6px 18px ${zusColors.primary}44`, flexShrink: 0 }}>
                     <Work sx={{ fontSize: 24 }} />
                 </Box>
