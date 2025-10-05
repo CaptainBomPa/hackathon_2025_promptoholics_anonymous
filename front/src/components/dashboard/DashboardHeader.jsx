@@ -20,9 +20,9 @@ const DashboardHeader = ({ onToggleSidebar }) => {
             const pageH = pdf.internal.pageSize.getHeight();
             const margin = 15;
             
-            // Function to handle Polish characters properly
+            // Function to handle Polish characters - convert to ASCII equivalents
             const addTextWithPolishSupport = (text, x, y, options = {}) => {
-                // Convert Polish characters to their closest ASCII equivalents for PDF compatibility
+                // Convert Polish characters to ASCII equivalents for PDF compatibility
                 const cleanText = text
                     .replace(/ą/g, 'a').replace(/Ą/g, 'A')
                     .replace(/ć/g, 'c').replace(/Ć/g, 'C')
@@ -37,9 +37,12 @@ const DashboardHeader = ({ onToggleSidebar }) => {
                 pdf.text(cleanText, x, y, options);
             };
             
-            // Add support for Polish characters by using a Unicode-compatible font
-            // Use Times font which has better Unicode support in jsPDF
-            pdf.setFont('times', 'normal');
+            // Try to use a font that supports Polish characters
+            try {
+                pdf.setFont('helvetica', 'normal');
+            } catch (error) {
+                console.warn('Font setting failed, using default');
+            }
             
             // Add header with title and generation date
             pdf.setFontSize(20);
@@ -94,18 +97,10 @@ const DashboardHeader = ({ onToggleSidebar }) => {
             });
             
             // Add charts and visualizations
-            const targets = ['report-summary', 'report-zus-chart', 'report-salary-chart'];
-            let isFirstChart = true;
-            
-            for (const id of targets) {
-                const el = document.getElementById(id);
-                if (!el) continue;
-                
-                if (!isFirstChart) {
-                    pdf.addPage();
-                }
-                
-                const canvas = await html2canvas(el, { 
+            // First add summary section on first page
+            const summaryEl = document.getElementById('report-summary');
+            if (summaryEl) {
+                const canvas = await html2canvas(summaryEl, { 
                     scale: 2, 
                     useCORS: true, 
                     backgroundColor: '#ffffff',
@@ -115,28 +110,72 @@ const DashboardHeader = ({ onToggleSidebar }) => {
                 const imgW = pageW - margin * 2;
                 const ratio = imgW / canvas.width;
                 const imgH = canvas.height * ratio;
+                const startY = Math.max(yPos + 10, 120);
                 
-                // If image is too tall, split it across pages
-                if (imgH > pageH - margin * 2) {
-                    const slicePx = Math.floor((pageH - margin * 2) / ratio);
-                    for (let y = 0; y < canvas.height; y += slicePx) {
-                        if (y > 0) pdf.addPage();
-                        
-                        const sliceCanvas = document.createElement('canvas');
-                        sliceCanvas.width = canvas.width;
-                        sliceCanvas.height = Math.min(slicePx, canvas.height - y);
-                        const ctx = sliceCanvas.getContext('2d');
-                        ctx.drawImage(canvas, 0, y, canvas.width, sliceCanvas.height, 0, 0, sliceCanvas.width, sliceCanvas.height);
-                        
-                        const sliceImgH = sliceCanvas.height * ratio;
-                        pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', margin, margin, imgW, sliceImgH);
-                    }
-                } else {
-                    const startY = isFirstChart ? Math.max(yPos + 10, 120) : margin;
-                    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, startY, imgW, imgH);
+                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, startY, imgW, imgH);
+            }
+            
+            // Add new page for charts
+            pdf.addPage();
+            
+            // Add both charts on the same page
+            const chartTargets = ['report-zus-chart', 'report-salary-chart'];
+            let currentY = margin;
+            
+            // Debug: log chart data
+            console.log('ZUS Account Growth Data:', state.results.accountGrowthProjection);
+            
+            for (let i = 0; i < chartTargets.length; i++) {
+                const id = chartTargets[i];
+                const el = document.getElementById(id);
+                if (!el) {
+                    console.warn(`Chart element not found: ${id}`);
+                    continue;
                 }
                 
-                isFirstChart = false;
+                try {
+                    console.log(`Capturing chart: ${id}`);
+                    
+                    // Wait longer for chart to fully render
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    
+                    const canvas = await html2canvas(el, { 
+                        scale: 1.5,
+                        useCORS: true, 
+                        backgroundColor: '#ffffff',
+                        logging: false,
+                    });
+                    
+                    if (canvas.width === 0 || canvas.height === 0) {
+                        console.warn(`Chart ${id} has zero dimensions, skipping`);
+                        continue;
+                    }
+                    
+                    const imgW = pageW - margin * 2;
+                    const ratio = imgW / canvas.width;
+                    const imgH = canvas.height * ratio;
+                    
+                    // Calculate available space for each chart (half page minus margins)
+                    const maxChartHeight = (pageH - margin * 3) / 2; // Divide page in half with extra margin
+                    
+                    if (imgH > maxChartHeight) {
+                        // If chart is too tall, scale it down to fit
+                        const scaledRatio = maxChartHeight / imgH;
+                        const scaledW = imgW * scaledRatio;
+                        const scaledH = maxChartHeight;
+                        
+                        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin + (imgW - scaledW) / 2, currentY, scaledW, scaledH);
+                        currentY += scaledH + 10;
+                    } else {
+                        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, currentY, imgW, imgH);
+                        currentY += imgH + 10;
+                    }
+                    
+                    console.log(`Successfully captured chart: ${id}`);
+                } catch (error) {
+                    console.error(`Failed to capture chart ${id}:`, error);
+                    // Continue with next chart instead of failing completely
+                }
             }
             
             // Add footer with disclaimer
