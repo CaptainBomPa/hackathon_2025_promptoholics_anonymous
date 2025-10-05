@@ -55,7 +55,7 @@ const DashboardMainContent = () => {
                 sx={{
                     mb: 4,
                     p: { xs: 2.5, sm: 3 },
-                    borderRadius: 4,
+                    borderRadius: 1,
                     backdropFilter: 'blur(6px)',
                     background: `linear-gradient(135deg, ${zusColors.primary}0A 0%, ${zusColors.info}08 100%)`,
                     border: `1px solid ${zusColors.primary}26`,
@@ -80,7 +80,7 @@ const DashboardMainContent = () => {
                         <Box
                             sx={{
                                 p: 1.25,
-                                borderRadius: 2,
+                                borderRadius: 1,
                                 background: `linear-gradient(135deg, ${zusColors.primary} 0%, ${zusColors.info} 100%)`,
                                 boxShadow: `0 6px 20px ${zusColors.primary}30`,
                                 display: 'flex',
@@ -119,7 +119,7 @@ const DashboardMainContent = () => {
                                 sx={{
                                     px: 1.25,
                                     py: 0.75,
-                                    borderRadius: 2,
+                                    borderRadius: 1,
                                     border: `1px solid ${zusColors.info}33`,
                                     backgroundColor: `${zusColors.info}10`,
                                     color: zusColors.dark,
@@ -127,7 +127,6 @@ const DashboardMainContent = () => {
                                     whiteSpace: 'nowrap',
                                 }}
                             >
-                                Ostatnia aktualizacja: {state.uiState.isCalculating ? 'trwa…' : 'przed chwilą'}
                             </Typography>
                         </Tooltip>
                     </Box>
@@ -208,36 +207,11 @@ const DashboardMainContent = () => {
                         gap: 2,
                         mb: 4,
                         p: 2,
-                        borderRadius: 2,
+                        borderRadius: 1,
                         background: `linear-gradient(90deg, ${zusColors.info}10 0%, ${zusColors.primary}10 50%, ${zusColors.secondary}10 100%)`,
                         border: `1px solid ${zusColors.info}30`,
                     }}
                 >
-                    <Box
-                        sx={{
-                            p: 1.5,
-                            borderRadius: '50%',
-                            background: `linear-gradient(135deg, ${zusColors.info} 0%, ${zusColors.primary} 100%)`,
-                            boxShadow: `0 6px 20px ${zusColors.info}40`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <Timeline sx={{ color: 'white', fontSize: 28 }} />
-                    </Box>
-                    <Typography
-                        variant="h5"
-                        sx={{
-                            fontWeight: 700,
-                            background: `linear-gradient(135deg, ${zusColors.info} 0%, ${zusColors.primary} 100%)`,
-                            backgroundClip: 'text',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                        }}
-                    >
-                        Wizualizacje
-                    </Typography>
                 </Box>
 
                 {/* ZUS Account Growth Chart */}
@@ -249,7 +223,7 @@ const DashboardMainContent = () => {
                             p: { xs: 2.5, md: 4 },
                             height: 520,
                             width: '100%',
-                            borderRadius: 3,
+                            borderRadius: 1,
                             background: `linear-gradient(135deg, ${zusColors.primary}05 0%, white 50%, ${zusColors.info}05 100%)`,
                             border: `1px solid ${zusColors.primary}20`,
                             boxShadow: `0 8px 32px ${zusColors.primary}15`,
@@ -264,7 +238,7 @@ const DashboardMainContent = () => {
                             <Box
                                 sx={{
                                     p: 1,
-                                    borderRadius: 2,
+                                    borderRadius: 1,
                                     background: `linear-gradient(135deg, ${zusColors.primary} 0%, ${zusColors.success} 100%)`,
                                     boxShadow: `0 4px 12px ${zusColors.primary}30`,
                                 }}
@@ -293,7 +267,7 @@ const DashboardMainContent = () => {
                             p: { xs: 2.5, md: 4 },
                             height: 520,
                             width: '100%',
-                            borderRadius: 3,
+                            borderRadius: 1,
                             background: `linear-gradient(135deg, ${zusColors.info}05 0%, white 50%, ${zusColors.secondary}05 100%)`,
                             border: `1px solid ${zusColors.info}20`,
                             boxShadow: `0 8px 32px ${zusColors.info}15`,
@@ -308,7 +282,7 @@ const DashboardMainContent = () => {
                             <Box
                                 sx={{
                                     p: 1,
-                                    borderRadius: 2,
+                                    borderRadius: 1,
                                     background: `linear-gradient(135deg, ${zusColors.info} 0%, ${zusColors.secondary} 100%)`,
                                     boxShadow: `0 4px 12px ${zusColors.info}30`,
                                 }}
@@ -409,7 +383,7 @@ const MetricCard = ({
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
-                borderRadius: 3,
+                borderRadius: 1,
                 background: `linear-gradient(180deg, ${color}10 0%, #fff 55%)`,
                 border: `1px solid ${color}24`,
                 boxShadow: `0 8px 28px ${color}1f`,
