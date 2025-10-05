@@ -3,6 +3,8 @@ package com.promptoholics.anonymous.ApiBackend.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
@@ -36,12 +38,14 @@ public class CorsConfig implements WebMvcConfigurer {
 //    }
 
     @Bean
+    @Order(Ordered.HIGHEST_PRECEDENCE)
     public CorsFilter corsFilter() {
         CorsConfiguration c = new CorsConfiguration();
-        c.setAllowedOrigins(List.of(allowedOrigins.split(",")));
-        c.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
+        c.setAllowedOriginPatterns(List.of("*"));
+        c.setAllowedMethods(List.of("GET","POST","PUT","DELETE","PATCH","OPTIONS"));
         c.setAllowedHeaders(List.of("*"));
-        c.setAllowCredentials(false); // zmień na true tylko jeśli faktycznie używasz cookies/autoryzacji
+        c.setExposedHeaders(List.of("*"));
+        c.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource s = new UrlBasedCorsConfigurationSource();
         s.registerCorsConfiguration("/**", c);
