@@ -12,10 +12,13 @@ import {
 } from '@mui/material';
 import {
     TrendingUp,
+    AccountBalance,
     Assessment,
     Timeline,
     Work,
     LocalHospital,
+    CheckCircle,
+    HourglassBottom,
 } from '@mui/icons-material';
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn'
 import { useDashboard } from '../../contexts/DashboardContext';
@@ -54,7 +57,7 @@ const DashboardMainContent = () => {
             <Box
                 id="report-summary" // ⬅️ sekcja do PDF
                 sx={{
-                    mb: 4,
+                    mb: 0,
                     p: { xs: 2.5, sm: 3 },
                     borderRadius: 1,
                     backdropFilter: 'blur(6px)',
@@ -286,6 +289,11 @@ const DashboardMainContent = () => {
                     )}
                 </Box>
             )}
+
+            <ExpectationStatusCard
+                meetsExpectation={state.results?.meetsExpectation}
+                loading={state.uiState.isCalculating}
+            />
         </Box>
     );
 };
@@ -579,6 +587,117 @@ const SickLeaveCard = ({ sickLeaveMode, customDays, currentPension, wageWithSick
         </Paper>
     );
 };
+
+const ExpectationStatusCard = ({ meetsExpectation, loading }) => {
+    const isMet = !!(meetsExpectation && meetsExpectation.isMet)
+    const shortfall = Math.max(0, Math.round(meetsExpectation?.shortfallPLN ?? 0))
+    const years = Math.max(0, parseInt(meetsExpectation?.extraYearsRequiredEstimate ?? 0, 10))
+    const yearsLabel = years === 1 ? 'rok' : (years >= 2 && years <= 4 ? 'lata' : 'lat')
+    const badgeBg = isMet ? zusColors.success : zusColors.error
+    const title = isMet ? 'Oczekiwania spełnione' : 'Oczekiwania niespełnione'
+
+    return (
+        <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+            <Paper
+                elevation={0}
+                sx={{
+                    width: '45%',
+                    maxWidth: 780,
+                    p: 3,
+                    borderRadius: 1,
+                    bgcolor: '#fff',
+                    border: '1px solid rgba(0,0,0,0.06)',
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.06)',
+                }}
+            >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                    <Box
+                        sx={{
+                            width: 44,
+                            height: 44,
+                            borderRadius: 2,
+                            display: 'grid',
+                            placeItems: 'center',
+                            bgcolor: badgeBg,
+                            color: '#fff',
+                            boxShadow: `0 6px 18px ${badgeBg}44`,
+                            flexShrink: 0,
+                        }}
+                    >
+                        {isMet ? <CheckCircle sx={{ fontSize: 24 }} /> : <HourglassBottom sx={{ fontSize: 24 }} />}
+                    </Box>
+
+                    <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 800, color: zusColors.dark, lineHeight: 1.1 }}>
+                            {title}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: `${zusColors.dark}99` }}>
+                            {isMet ? 'Twoja prognozowana emerytura osiąga oczekiwany poziom.' : 'Aby spełnić oczekiwania, rozważ dodatkowe działania.'}
+                        </Typography>
+                    </Box>
+                </Box>
+
+                {loading ? (
+                    <Box>
+                        <Skeleton variant="text" width="60%" height={36} sx={{ mb: 1 }} />
+                        <Skeleton variant="rounded" height={10} />
+                    </Box>
+                ) : (
+                    <>
+                        {isMet ? (
+                            <Typography
+                                variant="h5"
+                                sx={{ mt: 0.5, fontWeight: 900, color: zusColors.success, lineHeight: 1.15 }}
+                            >
+                                Gratulacje! Cel osiągnięty.
+                            </Typography>
+                        ) : (
+                            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+                                <Box
+                                    sx={{
+                                        p: 2,
+                                        borderRadius: 2,
+                                        bgcolor: '#fff',
+                                        border: `1px solid ${zusColors.error}22`,
+                                    }}
+                                >
+                                    <Typography variant="caption" sx={{ color: `${zusColors.dark}99`, fontWeight: 700 }}>
+                                        Brakuje miesięcznie
+                                    </Typography>
+                                    <Typography
+                                        variant="h5"
+                                        sx={{ mt: 0.5, fontWeight: 900, color: zusColors.error, lineHeight: 1.15 }}
+                                    >
+                                        {formatCurrency(shortfall)}
+                                    </Typography>
+                                </Box>
+
+                                <Box
+                                    sx={{
+                                        p: 2,
+                                        borderRadius: 2,
+                                        bgcolor: '#fff',
+                                        border: `1px solid ${zusColors.primary}22`,
+                                    }}
+                                >
+                                    <Typography variant="caption" sx={{ color: `${zusColors.dark}99`, fontWeight: 700 }}>
+                                        Szacowany dodatkowy czas
+                                    </Typography>
+                                    <Typography
+                                        variant="h5"
+                                        sx={{ mt: 0.5, fontWeight: 900, color: zusColors.primary, lineHeight: 1.15 }}
+                                    >
+                                        {years} {yearsLabel}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        )}
+                    </>
+                )}
+            </Paper>
+        </Box>
+    )
+}
 
 const WorkAfterRetirementCard = ({ workAfterRetirement, postponedData, currentPension, loading }) => {
     const yearsText = workAfterRetirement === 1 ? 'rok' : workAfterRetirement < 5 ? 'lata' : 'lat';
