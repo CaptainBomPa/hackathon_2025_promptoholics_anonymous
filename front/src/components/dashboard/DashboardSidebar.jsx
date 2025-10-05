@@ -130,24 +130,6 @@ const DashboardSidebar = ({ open, onClose }) => {
                                     {panel.id === 'zusAccount' && <ZUSAccountPanel />}
                                     {panel.id === 'workAfterRetirement' && <WorkAfterRetirementPanel />}
 
-                                    {/* Ukryj komunikat „implementacja w toku” dla gotowych paneli */}
-                                    {!['basic', 'indexation', 'zusAccount', 'workAfterRetirement'].includes(panel.id) && (
-                                        <Box sx={{ px: 2, py: 1 }}>
-                                            <Typography variant="body2" color="text.secondary">
-                                                Panel {panel.title} - implementacja w toku
-                                            </Typography>
-                                            {panel.id === 'sickLeave' && (
-                                                <Box sx={{ mt: 1 }}>
-                                                    <Typography variant="caption" display="block">
-                                                        Tryb: {state.parameters.sickLeave.mode === 'averaged' ? 'Uśrednione' : 'Własne'}
-                                                    </Typography>
-                                                    <Typography variant="caption" display="block">
-                                                        Okresy historyczne: {state.parameters.sickLeave.historicalPeriods.length}
-                                                    </Typography>
-                                                </Box>
-                                            )}
-                                        </Box>
-                                    )}
                                 </Box>
                             </Collapse>
                         </React.Fragment>
