@@ -1,9 +1,33 @@
-### Generate Admin Report (XLS)
-POST http://localhost:8080/admin/reports
+### Generate admin report (XLS)
+POST http://localhost:8080/admin/reports/xls
 Content-Type: application/json
 Accept: application/vnd.ms-excel
 
 {
-  "dateFrom": "2025-01-01",
-  "dateTo": "2025-10-10"
+  "dateFrom": "2025-09-25",
+  "dateTo": "2025-10-01"
 }
+
+> {%
+client.test("Response is Excel file", function() {
+  client.assert(response.status === 200, "Response status is not 200");
+  client.assert(response.contentType === "application/vnd.ms-excel", "Wrong content type");
+});
+%}
+
+### Generate admin report (JSON)
+POST http://localhost:8080/admin/reports/json
+Content-Type: application/json
+Accept: application/json
+
+{
+  "dateFrom": "2025-09-25",
+  "dateTo": "2025-10-01"
+}
+
+> {%
+client.test("Response is JSON", function() {
+  client.assert(response.status === 200, "Response status is not 200");
+  client.assert(response.contentType === "application/json", "Wrong content type");
+});
+%}

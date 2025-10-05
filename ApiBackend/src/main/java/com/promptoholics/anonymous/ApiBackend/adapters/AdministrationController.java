@@ -3,6 +3,10 @@ package com.promptoholics.anonymous.ApiBackend.adapters;
 import com.promptoholics.anonymous.ApiBackend.api.AdministrationApi;
 import com.promptoholics.anonymous.ApiBackend.application.AdministrationFacade;
 import com.promptoholics.anonymous.ApiBackend.schemas.dtos.AdminReportCreateRequestDto;
+import com.promptoholics.anonymous.ApiBackend.schemas.dtos.AdminReportJsonCreateRequestDto;
+import com.promptoholics.anonymous.ApiBackend.schemas.dtos.PensionCalculationReportJsonDto;
+import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
@@ -10,7 +14,10 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @Component
 @RestController
@@ -30,5 +37,10 @@ public class AdministrationController implements AdministrationApi {
                 .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
                 .contentLength(resource.contentLength())
                 .body(resource);
+    }
+
+    @Override
+    public ResponseEntity<List<PensionCalculationReportJsonDto>> generateAdminReportJson(@Parameter(name = "AdminReportJsonCreateRequestDto", description = "", required = true) @Valid @RequestBody AdminReportJsonCreateRequestDto adminReportJsonCreateRequestDto) {
+        return ResponseEntity.ok(administrationFacade.generateAdminReportJson(adminReportJsonCreateRequestDto.getDateFrom(), adminReportJsonCreateRequestDto.getDateTo()));
     }
 }

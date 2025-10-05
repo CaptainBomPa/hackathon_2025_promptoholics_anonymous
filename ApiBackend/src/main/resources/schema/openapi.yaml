@@ -107,7 +107,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /admin/reports:
+  /admin/reports/xls:
     post:
       tags: [Administration]
       operationId: generateAdminReport
@@ -131,6 +131,38 @@ paths:
               schema:
                 type: string
                 format: binary
+
+  /admin/reports/json:
+    post:
+      tags: [ Administration ]
+      operationId: generateAdminReportJson
+      summary: Generate usage report (JSON)
+      description: >
+        Returns a synchronous usage/interest report in JSON format with columns:
+        Date, Time, Expected Pension, Age, Sex, Salary, Sick Leave Included,
+        ZUS Funds (account/subaccount), Actual/Real Pension, Postal Code.
+        Unlike /admin/reports (XLS), this endpoint returns pure JSON data.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminReportJsonCreateRequest'
+      responses:
+        '200':
+          description: Report generated successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PensionCalculationReportJson'
+        '422':
+          description: Validation error (e.g. invalid date range)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
 
 components:
   schemas:
@@ -328,6 +360,98 @@ components:
         dateTo:
           type: string
           format: date
+
+    AdminReportJsonCreateRequest:
+      type: object
+      required: [ dateFrom, dateTo ]
+      properties:
+        dateFrom:
+          type: string
+          format: date
+        dateTo:
+          type: string
+          format: date
+
+    PensionCalculationReportJson:
+      type: object
+      description: >
+        Dane pojedynczego wiersza raportu JSON (odpowiednik encji PensionCalculationEntity).
+        Zawiera dane wejściowe użytkownika, wyniki kalkulacji oraz metadane czasu utworzenia.
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "c6c8a4b3-1b2d-4e52-9b2f-ec1f4397c5a0"
+          description: Unikalny identyfikator obliczenia (UUID)
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-10-05T12:34:56Z"
+          description: Znacznik czasu utworzenia zapisu (UTC)
+        date:
+          type: string
+          format: date
+          example: "2025-10-05"
+          description: Data utworzenia (Europe/Warsaw) – wyliczana z createdAt
+        time:
+          type: string
+          example: "14:32:18"
+          description: Czas utworzenia (Europe/Warsaw) – wyliczany z createdAt
+        expectedPension:
+          type: number
+          format: double
+          example: 6000.0
+          description: Oczekiwana emerytura miesięczna (PLN)
+        age:
+          type: integer
+          minimum: 0
+          maximum: 120
+          example: 30
+          description: Wiek użytkownika w momencie obliczenia
+        gender:
+          type: string
+          example: "M"
+          description: Płeć użytkownika (np. M / F)
+        salaryAmount:
+          type: number
+          format: double
+          example: 8000.0
+          description: Wynagrodzenie brutto miesięcznie (PLN)
+        includedSicknessPeriods:
+          type: boolean
+          example: true
+          description: Czy uwzględniono okresy chorobowe w kalkulacji
+        accumulatedFundsTotal:
+          type: number
+          format: double
+          nullable: true
+          example: 37000.0
+          description: Suma zgromadzonych środków (konto + subkonto ZUS)
+        actualPension:
+          type: number
+          format: double
+          nullable: true
+          example: 5200.5
+          description: Nominalna miesięczna emerytura w roku przejścia na emeryturę (PLN)
+        inflationAdjustedPension:
+          type: number
+          format: double
+          nullable: true
+          example: 3980.25
+          description: Emerytura miesięczna skorygowana o inflację (PLN, w cenach bieżących)
+        postalCode:
+          type: string
+          nullable: true
+          example: "43-100"
+          description: Kod pocztowy użytkownika
+      required:
+        - id
+        - createdAt
+        - expectedPension
+        - age
+        - gender
+        - salaryAmount
+        - includedSicknessPeriods
 
     Error:
       type: object

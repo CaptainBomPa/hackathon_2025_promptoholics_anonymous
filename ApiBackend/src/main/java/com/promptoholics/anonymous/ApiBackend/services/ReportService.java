@@ -2,24 +2,27 @@ package com.promptoholics.anonymous.ApiBackend.services;
 
 import com.promptoholics.anonymous.ApiBackend.adapters.repository.PostgresPensionCalculationRepository;
 import com.promptoholics.anonymous.ApiBackend.domain.PensionCalculationEntity;
+import com.promptoholics.anonymous.ApiBackend.schemas.dtos.PensionCalculationReportJsonDto;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class ReportServiceXls {
+public class ReportService {
+    private static final ZoneId ZONE_POLAND = ZoneId.of("Europe/Warsaw");
+    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
     private final PostgresPensionCalculationRepository repository;
 
     private static final String[] HEADERS = {
@@ -76,5 +79,64 @@ public class ReportServiceXls {
         } catch (IOException e) {
             throw new RuntimeException("Błąd generowania raportu XLS", e);
         }
+    }
+
+    public List<PensionCalculationReportJsonDto> generateJsonReport(LocalDate dateFrom, LocalDate dateTo) {
+        Instant from = dateFrom.atStartOfDay(ZoneId.systemDefault()).toInstant();
+        Instant to = dateTo.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        return toReportJsonList(repository.findAllByCreatedAtBetween(from, to));
+    }
+
+    private List<PensionCalculationReportJsonDto> toReportJsonList(List<PensionCalculationEntity> entities) {
+        if (entities == null || entities.isEmpty()) {
+            return List.of();
+        }
+
+        return entities.stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    private PensionCalculationReportJsonDto toDto(PensionCalculationEntity e) {
+        // Konwersja czasu UTC -> lokalny (Polska)
+        OffsetDateTime createdAt = e.getCreatedAt() != null
+                ? e.getCreatedAt().atOffset(ZoneOffset.UTC)
+                : null;
+
+        LocalDate date = null;
+        String time = null;
+
+        if (createdAt != null) {
+            ZonedDateTime local = createdAt.atZoneSameInstant(ZONE_POLAND);
+            date = local.toLocalDate();
+            time = local.toLocalTime().format(TIME_FMT);
+        }
+
+        PensionCalculationReportJsonDto dto = new PensionCalculationReportJsonDto(
+                e.getId(),
+                createdAt,
+                e.getExpectedPension(),
+                e.getAge(),
+                e.getGender(),
+                e.getSalaryAmount(),
+                e.isIncludedSicknessPeriods()
+        );
+
+        dto.setDate(date);
+        dto.setTime(time);
+
+        if (e.getAccumulatedFundsTotal() != null)
+            dto.setAccumulatedFundsTotal(JsonNullable.of(e.getAccumulatedFundsTotal()));
+
+        if (e.getActualPension() != null)
+            dto.setActualPension(JsonNullable.of(e.getActualPension()));
+
+        if (e.getInflationAdjustedPension() != null)
+            dto.setInflationAdjustedPension(JsonNullable.of(e.getInflationAdjustedPension()));
+
+        if (e.getPostalCode() != null)
+            dto.setPostalCode(JsonNullable.of(e.getPostalCode()));
+
+        return dto;
     }
 }
