@@ -122,7 +122,7 @@ public class CalculationFacadeV3 {
 
         // Relacja do średniej emerytury (miesięcznej) w roku przejścia
         double avgPensionInYearMonthly = macro.projectAveragePension(retireYear);
-        double vsAvgPct = monthlyPensionNominalActual / Math.max(1e-9, avgPensionInYearMonthly) * 100.0;
+        double vsAvgPct = monthlyPensionNominalActual / Math.max(1e-9, avgPensionInYearMonthly) * 100.0 - 100;
 
         // === 6) salaryByYear (salaryProjection): od ROKU BIEŻĄCEGO do retireYear ===
         Map<YearMonth, Double> monthlyChosen = includeSick ? monthlyIncl : monthlyExcl;
