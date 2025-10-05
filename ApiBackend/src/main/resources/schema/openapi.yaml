@@ -281,6 +281,15 @@ components:
                   zusAccountFundsPLN:
                     type: number
                     format: float
+            salaryProjection:
+              type: array
+              items:
+                properties:
+                  year:
+                    type: integer
+                  salary:
+                    type: number
+                    format: float
 
     PostalCodeUpdateRequest:
       type: object
