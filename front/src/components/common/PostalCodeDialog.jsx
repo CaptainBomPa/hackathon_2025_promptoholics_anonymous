@@ -89,6 +89,16 @@ const PostalCodeDialog = ({ open, onClose, calculationId }) => {
     }
   };
 
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      handleSubmit();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      handleSkip();
+    }
+  };
+
   return (
     <Dialog
       open={open}
@@ -135,8 +145,10 @@ const PostalCodeDialog = ({ open, onClose, calculationId }) => {
           label="Kod pocztowy"
           value={postalCode}
           onChange={handlePostalCodeChange}
+          onKeyDown={handleKeyDown}
           placeholder="00-001"
           helperText="Format: XX-XXX (np. 00-001, 31-559)"
+          autoFocus
           sx={{
             '& .MuiOutlinedInput-root': {
               borderRadius: 2,

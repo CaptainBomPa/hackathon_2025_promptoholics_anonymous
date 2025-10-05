@@ -37,6 +37,10 @@ const DashboardPage = () => {
         plannedEndYear: request?.plannedEndYear || simulationResults.retirementYear,
         expectedPension: userExpectations.expectedAmount,
       },
+      zusAccount: {
+        accountBalance: request?.zusAccountFundsPLN || 0,
+        workAfterRetirement: 0,
+      },
     };
   };
 

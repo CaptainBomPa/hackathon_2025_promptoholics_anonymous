@@ -19,22 +19,7 @@ const initialState = {
       expectedPension: 4500,
     },
     salaryTimeline: {
-      entries: [
-        {
-          id: 1,
-          type: 'salary',
-          startDate: new Date('2015-01-01'),
-          endDate: new Date('2024-12-31'),
-          grossAmount: 8500,
-        },
-        {
-          id: 2,
-          type: 'salary',
-          startDate: new Date('2025-01-01'),
-          endDate: new Date('2055-12-31'),
-          grossAmount: 8500,
-        },
-      ],
+      entries: [],
       useCustomValues: false,
       defaultGrowthRate: 3.5,
     },
@@ -308,6 +293,7 @@ export const DashboardProvider = ({ children, initialData = {} }) => {
     parameters: {
       ...initialState.parameters,
       basic: { ...initialState.parameters.basic, ...initialData.basic },
+      zusAccount: { ...initialState.parameters.zusAccount, ...initialData.zusAccount },
     },
   };
 

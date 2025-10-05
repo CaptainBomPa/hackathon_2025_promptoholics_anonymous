@@ -3,19 +3,23 @@ import {
     Box, Container, Typography, Paper, TextField, Button,
     InputAdornment, Grid, Stack, Divider, MenuItem, Chip
 } from '@mui/material'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import AppHeader from '../components/common/AppHeader'
 import WizardProgress from '../components/common/WizardProgress'
 
 export default function SimulatorFormPage() {
     const navigate = useNavigate()
+    const { state } = useLocation()
+    
+    // Get expected pension from previous screen (HomePage)
+    const expectedPensionFromPrevious = state?.expectedPension || ''
 
-    const [age, setAge] = useState('33')
-    const [gender, setGender] = useState('K')
-    const [wage, setWage] = useState('9200')
-    const [startYear, setStartYear] = useState('2017')
-    const [endYear, setEndYear] = useState('2055')
-    const [goal, setGoal] = useState('5200')
+    const [age, setAge] = useState('')
+    const [gender, setGender] = useState('K') // Keep default for gender as requested
+    const [wage, setWage] = useState('')
+    const [startYear, setStartYear] = useState('')
+    const [endYear, setEndYear] = useState('')
+    const [goal, setGoal] = useState(expectedPensionFromPrevious.toString())
 
     const ageError = age === '' || Number(age) < 16 || Number(age) > 80
     const wageError = wage === '' || Number(wage) <= 0

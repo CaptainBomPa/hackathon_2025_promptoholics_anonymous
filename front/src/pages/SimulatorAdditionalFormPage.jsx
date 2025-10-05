@@ -12,11 +12,11 @@ export default function SimulatorAdditionalFormPage() {
     const { state } = useLocation()
     const basicFormData = state?.basicFormData
 
-    const [zusBalance, setZusBalance] = useState()
-    const [sickMode, setSickMode] = useState('avg')
-    const [sickDays, setSickDays] = useState('7')
-    const [sickYears, setSickYears] = useState('5')
-    const [sickLoss, setSickLoss] = useState('15')
+    const [zusBalance, setZusBalance] = useState('')
+    const [sickMode, setSickMode] = useState('avg') // Keep default for sick leave mode
+    const [sickDays, setSickDays] = useState('')
+    const [sickYears, setSickYears] = useState('')
+    const [sickLoss, setSickLoss] = useState('')
 
     const validMoney = zusBalance === '' ? true : Number(zusBalance) >= 0
     const validCustom = sickMode !== 'custom'

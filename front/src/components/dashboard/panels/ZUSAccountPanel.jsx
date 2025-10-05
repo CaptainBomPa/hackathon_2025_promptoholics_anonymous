@@ -127,7 +127,7 @@ const ZUSAccountPanel = () => {
                         fullWidth
                         value={accountBalance}
                         onChange={handleAccountBalanceChange}
-                        placeholder="25000"
+                        placeholder="np. 25000"
                         inputMode="decimal"
                         label="Saldo konta ZUS"
                         error={Boolean(error)}
