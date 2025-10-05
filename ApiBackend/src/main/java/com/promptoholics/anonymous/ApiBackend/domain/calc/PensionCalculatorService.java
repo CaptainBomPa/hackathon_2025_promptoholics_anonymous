@@ -47,7 +47,17 @@ public class PensionCalculatorService {
             boolean includeSick,
             BigDecimal zusAccount,       // saldo konta (dziś)
             BigDecimal zusSubaccount,    // saldo subkonta (dziś)
-            String postal
+            String postal,
+            Integer additionalSickDaysPerYear,  // dodatkowe dni chorobowe rocznie (oprócz domyślnych 2%/3%)
+            List<WorkBreak> workBreaks          // okresy przerw w pracy (BREAK type)
+    ) {}
+
+    /**
+     * Work break period - time when contributions were not made
+     */
+    public record WorkBreak(
+            int startYear,
+            int endYear
     ) {}
 
     public record CalculationResult(
@@ -68,13 +78,16 @@ public class PensionCalculatorService {
         // 1) Ścieżka płac (miesięcznie) od roku bazowego do retYear
         Map<Integer, BigDecimal> wagePath = wagePath(in.grossMonthly(), BASE_YEAR_FOR_REAL, in.retYear());
 
-        // 2) Chorobowe
-        BigDecimal sick = in.includeSick() ? ("M".equalsIgnoreCase(in.sex()) ? SICK_M : SICK_F) : BigDecimal.ZERO;
+        // 2) Chorobowe (domyślne + dodatkowe dni)
+        BigDecimal sick = calculateSickLeaveImpact(in);
 
         // 3) Roczna podstawa (po chorobowym) z limitem 30-krotności
         Map<Integer, BigDecimal> baseIncl = annualBaseWithLimit(wagePath, sick);
 
-        // 4) Akumulacja konta i subkonta z waloryzacją
+        // 4) Uwzględnij przerwy w pracy (BREAK periods) - wyzeruj składki w tych latach
+        baseIncl = applyWorkBreaks(baseIncl, in.workBreaks());
+
+        // 5) Akumulacja konta i subkonta z waloryzacją
         Accum acc = accumulateSplit(nvl(in.zusAccount()), nvl(in.zusSubaccount()), baseIncl);
 
         // 5) Annuitetyzacja w retYear → MIESIĘCZNIE
@@ -186,10 +199,52 @@ public class PensionCalculatorService {
     private BigDecimal recompute(Input in, int newYear, BigDecimal sick){
         Map<Integer, BigDecimal> wage = wagePath(in.grossMonthly(), BASE_YEAR_FOR_REAL, newYear);
         Map<Integer, BigDecimal> base = annualBaseWithLimit(wage, sick);
+        base = applyWorkBreaks(base, in.workBreaks()); // Apply work breaks for postponed scenarios too
         Accum acc = accumulateSplit(nvl(in.zusAccount()), nvl(in.zusSubaccount()), base);
         int months = life.months(in.sex(), newYear);
         BigDecimal capital = acc.account.add(acc.subaccount);
         return capital.divide(new BigDecimal(months), 10, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Calculate total sick leave impact (default + additional days per year)
+     */
+    private BigDecimal calculateSickLeaveImpact(Input in) {
+        BigDecimal baseSick = BigDecimal.ZERO;
+        if (in.includeSick()) {
+            baseSick = "M".equalsIgnoreCase(in.sex()) ? SICK_M : SICK_F;
+        }
+
+        // Add additional sick days if provided
+        if (in.additionalSickDaysPerYear() != null && in.additionalSickDaysPerYear() > 0) {
+            // Convert days to percentage (assuming ~250 working days per year)
+            BigDecimal additionalSickPct = new BigDecimal(in.additionalSickDaysPerYear())
+                    .divide(new BigDecimal("250"), 10, RoundingMode.HALF_UP);
+            baseSick = baseSick.add(additionalSickPct);
+        }
+
+        return baseSick;
+    }
+
+    /**
+     * Apply work breaks - zero out contribution base for break years
+     */
+    private Map<Integer, BigDecimal> applyWorkBreaks(Map<Integer, BigDecimal> baseIncl, List<WorkBreak> workBreaks) {
+        if (workBreaks == null || workBreaks.isEmpty()) {
+            return baseIncl;
+        }
+
+        Map<Integer, BigDecimal> result = new HashMap<>(baseIncl);
+        for (WorkBreak brk : workBreaks) {
+            for (int year = brk.startYear(); year <= brk.endYear(); year++) {
+                if (result.containsKey(year)) {
+                    // Zero out contributions for this year (break period)
+                    result.put(year, BigDecimal.ZERO);
+                }
+            }
+        }
+
+        return result;
     }
 
     /* ======================== utils ======================== */

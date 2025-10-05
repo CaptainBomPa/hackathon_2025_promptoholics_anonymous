@@ -26,6 +26,9 @@ public class PensionCalculatorManualTest {
 
         // Test 4: Data validation
         testDataValidation();
+
+        // Test 5: Work breaks and additional sick days
+        testWorkBreaksAndSickDays();
     }
 
     private static void testScenario1() {
@@ -44,7 +47,9 @@ public class PensionCalculatorManualTest {
             true,                           // include sick leave
             BigDecimal.ZERO,                // ZUS account
             BigDecimal.ZERO,                // ZUS subaccount
-            null                            // postal
+            null,                           // postal
+            null,                           // additional sick days per year
+            null                            // work breaks
         );
 
         var result = calc.calculate(input);
@@ -121,6 +126,8 @@ public class PensionCalculatorManualTest {
             false,
             BigDecimal.ZERO,
             BigDecimal.ZERO,
+            null,
+            null,
             null
         );
 
@@ -150,14 +157,14 @@ public class PensionCalculatorManualTest {
         // Male calculation
         var inputM = new PensionCalculatorService.Input(
             null, 30, "M", new BigDecimal("6000"), 2025, 2060, true,
-            BigDecimal.ZERO, BigDecimal.ZERO, null
+            BigDecimal.ZERO, BigDecimal.ZERO, null, null, null
         );
         var resultM = calc.calculate(inputM);
 
         // Female calculation
         var inputF = new PensionCalculatorService.Input(
             null, 30, "F", new BigDecimal("6000"), 2025, 2060, true,
-            BigDecimal.ZERO, BigDecimal.ZERO, null
+            BigDecimal.ZERO, BigDecimal.ZERO, null, null, null
         );
         var resultF = calc.calculate(inputF);
 
@@ -230,5 +237,94 @@ public class PensionCalculatorManualTest {
         System.out.println("Female: " + PensionCalculatorService.SICK_F.multiply(new BigDecimal("100")) + "% reduction");
 
         System.out.println("\n✅ Test 4 PASSED\n");
+    }
+
+    private static void testWorkBreaksAndSickDays() {
+        System.out.println("TEST 5: Work breaks and additional sick days");
+        System.out.println("----------------------------------------------");
+
+        PensionCalculatorService calc = new PensionCalculatorService();
+
+        // Test without breaks (baseline)
+        var inputBaseline = new PensionCalculatorService.Input(
+            null, 30, "M", new BigDecimal("8000"), 2025, 2060, true,
+            BigDecimal.ZERO, BigDecimal.ZERO, null, null, null
+        );
+        var resultBaseline = calc.calculate(inputBaseline);
+
+        // Test with 2-year work break (2035-2036)
+        var breaks = java.util.List.of(
+            new PensionCalculatorService.WorkBreak(2035, 2036)
+        );
+        var inputWithBreak = new PensionCalculatorService.Input(
+            null, 30, "M", new BigDecimal("8000"), 2025, 2060, true,
+            BigDecimal.ZERO, BigDecimal.ZERO, null, null, breaks
+        );
+        var resultWithBreak = calc.calculate(inputWithBreak);
+
+        // Test with additional 10 sick days per year
+        var inputWithExtraSick = new PensionCalculatorService.Input(
+            null, 30, "M", new BigDecimal("8000"), 2025, 2060, true,
+            BigDecimal.ZERO, BigDecimal.ZERO, null, 10, null
+        );
+        var resultWithExtraSick = calc.calculate(inputWithExtraSick);
+
+        // Test with both breaks and extra sick days
+        var inputWithBoth = new PensionCalculatorService.Input(
+            null, 30, "M", new BigDecimal("8000"), 2025, 2060, true,
+            BigDecimal.ZERO, BigDecimal.ZERO, null, 10, breaks
+        );
+        var resultWithBoth = calc.calculate(inputWithBoth);
+
+        System.out.println("Baseline pension (no breaks): " + resultBaseline.actualMonthly() + " PLN");
+        System.out.println("With 2-year break (2035-2036): " + resultWithBreak.actualMonthly() + " PLN");
+        System.out.println("With +10 sick days/year: " + resultWithExtraSick.actualMonthly() + " PLN");
+        System.out.println("With both breaks + sick days: " + resultWithBoth.actualMonthly() + " PLN");
+
+        // Validation
+        boolean valid = true;
+
+        // Pension with break should be lower than baseline
+        if (resultWithBreak.actualMonthly().compareTo(resultBaseline.actualMonthly()) >= 0) {
+            System.out.println("❌ ERROR: Pension with work break should be lower!");
+            valid = false;
+        } else {
+            System.out.println("✅ Work break correctly reduces pension");
+        }
+
+        // Pension with extra sick days should be lower than baseline
+        if (resultWithExtraSick.actualMonthly().compareTo(resultBaseline.actualMonthly()) >= 0) {
+            System.out.println("❌ ERROR: Pension with extra sick days should be lower!");
+            valid = false;
+        } else {
+            System.out.println("✅ Additional sick days correctly reduce pension");
+        }
+
+        // Pension with both should be lowest
+        if (resultWithBoth.actualMonthly().compareTo(resultWithBreak.actualMonthly()) >= 0 ||
+            resultWithBoth.actualMonthly().compareTo(resultWithExtraSick.actualMonthly()) >= 0) {
+            System.out.println("❌ ERROR: Combined breaks+sick should result in lowest pension!");
+            valid = false;
+        } else {
+            System.out.println("✅ Combined impact correctly calculated");
+        }
+
+        // Calculate impact percentages
+        BigDecimal breakImpact = resultBaseline.actualMonthly().subtract(resultWithBreak.actualMonthly())
+                .divide(resultBaseline.actualMonthly(), 4, java.math.RoundingMode.HALF_UP)
+                .multiply(new BigDecimal("100"));
+        BigDecimal sickImpact = resultBaseline.actualMonthly().subtract(resultWithExtraSick.actualMonthly())
+                .divide(resultBaseline.actualMonthly(), 4, java.math.RoundingMode.HALF_UP)
+                .multiply(new BigDecimal("100"));
+
+        System.out.println("\nImpact analysis:");
+        System.out.println("2-year break impact: -" + breakImpact + "%");
+        System.out.println("10 extra sick days/year impact: -" + sickImpact + "%");
+
+        if (valid) {
+            System.out.println("\n✅ Test 5 PASSED\n");
+        } else {
+            System.out.println("\n❌ Test 5 FAILED\n");
+        }
     }
 }
