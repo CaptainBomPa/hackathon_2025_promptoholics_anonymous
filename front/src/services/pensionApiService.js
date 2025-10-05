@@ -16,7 +16,7 @@ const transformToApiRequest = (formData) => {
     grossSalaryPLN: parseFloat(formData.grossSalary) || 0,
     startYear: parseInt(formData.startYear) || 2015,
     plannedEndYear: parseInt(formData.plannedEndYear) || 2055,
-    
+
     // Optional fields
     expectedPensionPLN: formData.expectedPension ? parseFloat(formData.expectedPension) : undefined,
     includeSickLeave: formData.sickLeave?.mode === 'averaged' || false,
@@ -25,7 +25,7 @@ const transformToApiRequest = (formData) => {
     additionalWorkYears: formData.workAfterRetirement ? parseInt(formData.workAfterRetirement) : undefined,
     additionalSickLeaveDaysPerYear: formData.sickLeave?.customDays ? parseInt(formData.sickLeave.customDays) : undefined,
     contractType: transformContractType(formData.workType),
-    
+
     // Salary timeline changes
     additionalSalaryChanges: transformSalaryChanges(formData.salaryTimeline),
   };
@@ -61,34 +61,34 @@ const transformSalaryChanges = (salaryTimeline = []) => {
  */
 const transformApiResponse = (apiResponse) => {
   const result = apiResponse.result || {};
-  
+
   return {
     id: apiResponse.id,
     requestedAt: apiResponse.requestedAt,
-    
+
     // Main results
     actualAmountPLN: result.actualAmountPLN || 0,
     realAmountDeflated: result.realAmountDeflated || 0,
     replacementRatePct: result.replacementRatePct || 0,
     vsAverageInRetirementYearPct: result.vsAverageInRetirementYearPct || 0,
-    
+
     // Additional data
     wageInclSickLeavePLN: result.wageInclSickLeavePLN,
     wageExclSickLeavePLN: result.wageExclSickLeavePLN,
-    
+
     // Expectations
     meetsExpectation: result.meetsExpectation || {
       isMet: false,
       shortfallPLN: null,
       extraYearsRequiredEstimate: null,
     },
-    
+
     // Postponement scenarios
     ifPostponedYears: result.ifPostponedYears || [],
-    
+
     // ZUS account growth projection - transform backend format to frontend format
     accountGrowthProjection: transformZUSAccountData(result.zusAccountFundsByYear || []),
-    
+
     // Generate salary projection (mock for now - could be enhanced)
     salaryProjection: generateSalaryProjection(result),
   };
@@ -101,12 +101,12 @@ const transformZUSAccountData = (zusAccountFundsByYear) => {
   if (!zusAccountFundsByYear || zusAccountFundsByYear.length === 0) {
     return [];
   }
-  
+
   return zusAccountFundsByYear.map((item, index) => {
     const previousBalance = index > 0 ? zusAccountFundsByYear[index - 1].zusAccountFundsPLN : 0;
     const currentBalance = item.zusAccountFundsPLN || 0;
     const annualContribution = Math.max(0, currentBalance - previousBalance);
-    
+
     return {
       year: item.year,
       balance: Math.round(currentBalance),
@@ -125,7 +125,7 @@ const generateSalaryProjection = (result) => {
   const currentYear = new Date().getFullYear();
   const projectionYears = 10;
   const baseWage = result.wageExclSickLeavePLN || 5000;
-  
+
   return Array.from({ length: projectionYears }, (_, index) => ({
     year: currentYear + index,
     salary: baseWage * Math.pow(1.05, index), // 5% annual growth assumption
@@ -143,28 +143,28 @@ export const pensionApiService = {
   async calculatePension(formData) {
     try {
       const requestData = transformToApiRequest(formData);
-      
+
       if (config.enableDebug) {
         console.log('🧮 Calculating pension with data:', requestData);
       }
-      
+
       const response = await apiClient.post(config.endpoints.calculatePension, requestData);
-      
+
       const transformedResponse = transformApiResponse(response.data);
-      
+
       if (config.enableDebug) {
         console.log('✅ Pension calculation result:', transformedResponse);
       }
-      
+
       return {
         success: true,
         data: transformedResponse,
         duration: response.duration,
       };
-      
+
     } catch (error) {
       const errorInfo = handleApiError(error, 'calculatePension');
-      
+
       return {
         success: false,
         error: errorInfo,
@@ -172,31 +172,31 @@ export const pensionApiService = {
       };
     }
   },
-  
+
   /**
    * Update postal code for existing calculation
    */
   async updatePostalCode(calculationId, postalCode) {
     try {
       const url = config.endpoints.updatePostalCode.replace('{calculationId}', calculationId);
-      
+
       await apiClient.put(url, { postalCode });
-      
+
       return {
         success: true,
         message: 'Kod pocztowy został zaktualizowany',
       };
-      
+
     } catch (error) {
       const errorInfo = handleApiError(error, 'updatePostalCode');
-      
+
       return {
         success: false,
         error: errorInfo,
       };
     }
   },
-  
+
   /**
    * Get random pension fact
    */
@@ -205,15 +205,69 @@ export const pensionApiService = {
       const response = await apiClient.get(config.endpoints.randomFact, {
         params: { locale }
       });
-      
+
       return {
         success: true,
         data: response.data,
       };
-      
+
     } catch (error) {
       const errorInfo = handleApiError(error, 'getRandomFact');
-      
+
+      return {
+        success: false,
+        error: errorInfo,
+        data: null,
+      };
+    }
+  },
+
+  /**
+   * Generate admin report (XLS export)
+   */
+  async generateAdminReport(dateFrom, dateTo) {
+    try {
+      if (config.enableDebug) {
+        console.log('📊 Generating admin report from', dateFrom, 'to', dateTo);
+      }
+
+      const response = await apiClient.post(config.endpoints.generateReport, {
+        dateFrom,
+        dateTo
+      }, {
+        responseType: 'blob', // Important for file downloads
+        headers: {
+          'Accept': 'application/vnd.ms-excel'
+        }
+      });
+
+      // Create blob URL for download
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.ms-excel'
+      });
+      const url = window.URL.createObjectURL(blob);
+
+      // Generate filename with current timestamp
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const filename = `admin-report-${timestamp}.xls`;
+
+      if (config.enableDebug) {
+        console.log('✅ Admin report generated successfully:', filename);
+      }
+
+      return {
+        success: true,
+        data: {
+          url,
+          filename,
+          blob
+        },
+        duration: response.duration,
+      };
+
+    } catch (error) {
+      const errorInfo = handleApiError(error, 'generateAdminReport');
+
       return {
         success: false,
         error: errorInfo,
