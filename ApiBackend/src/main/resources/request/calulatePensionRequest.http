@@ -12,8 +12,9 @@ Accept: application/json
   "includeSickLeave": true,
   "zusAccountFundsPLN": 35000.5,
   "postalCode": "02-776",
-  "additionalSickLeaves": [
-    { "startDate": "2024-02-10T00:00:00Z", "endDate": "2024-02-18T23:59:59Z" },
-    { "startDate": "2025-05-02T00:00:00Z", "endDate": "2025-05-05T23:59:59Z" }
+  "additionalSickLeaveDaysPerYear": 10,
+  "additionalSalaryChanges": [
+    { "changeType": "BREAK", "startDate": "2024-02-10T00:00:00Z", "endDate": "2024-12-31T23:59:59Z" },
+    { "changeType": "BREAK", "startDate": "2030-01-01T00:00:00Z", "endDate": "2031-12-31T23:59:59Z" }
   ]
 }

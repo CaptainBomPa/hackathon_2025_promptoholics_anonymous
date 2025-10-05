@@ -7,10 +7,14 @@ import java.util.Map;
 
 /**
  * Serie ZUS używane w kalkulatorze:
- * - Wskaźniki waloryzacji KONTA (roczne),
- * - Wskaźniki waloryzacji SUBKONTA (kwartalne; roczny mnożnik = iloczyn Q1..Q4),
- * - Przeciętne wynagrodzenie miesięczne (roczne; 2024–2025 z kwartalnych, dalej projekcja).
- * W produkcji podmień wartości na oficjalne.
+ * - Wskaźniki waloryzacji KONTA (roczne) - OFICJALNE DANE ZUS 2000-2024,
+ * - Wskaźniki waloryzacji SUBKONTA (kwartalne; roczny mnożnik = iloczyn Q1..Q4) - OFICJALNE DANE ZUS,
+ * - Przeciętne wynagrodzenie miesięczne (roczne) - OFICJALNE DANE GUS 2024-2025, dalej projekcja.
+ *
+ * Źródła danych:
+ * - Wskaźniki ZUS: https://wskazniki.gofin.pl/
+ * - Przeciętne wynagrodzenia GUS: https://stat.gov.pl/
+ * - Zaktualizowano: 2025-10-05
  */
 public class ZUSMacroSeries {
 
@@ -19,7 +23,8 @@ public class ZUSMacroSeries {
     private final Map<Integer, BigDecimal> avgWageMonthly = new HashMap<>();
 
     public ZUSMacroSeries() {
-        // --- KONTO: waloryzacja roczna 2000–2024 (np. 114,41% -> 1.1441) ---
+        // --- KONTO: waloryzacja roczna 2000–2024 (OFICJALNE DANE ZUS) ---
+        // Źródło: https://wskazniki.gofin.pl/wskaznik/379/
         putAnnual(2000, "112.72"); putAnnual(2001, "106.68"); putAnnual(2002, "101.90");
         putAnnual(2003, "102.00"); putAnnual(2004, "103.63"); putAnnual(2005, "105.55");
         putAnnual(2006, "106.90"); putAnnual(2007, "112.85"); putAnnual(2008, "116.26");
@@ -28,20 +33,27 @@ public class ZUSMacroSeries {
         putAnnual(2015, "105.37"); putAnnual(2016, "106.37"); putAnnual(2017, "108.68");
         putAnnual(2018, "109.20"); putAnnual(2019, "108.94"); putAnnual(2020, "105.41");
         putAnnual(2021, "109.33"); putAnnual(2022, "114.40"); putAnnual(2023, "114.87");
-        putAnnual(2024, "114.41"); // publikowane w 2025 jako waloryzacja "za 2024"
+        putAnnual(2024, "114.41");
 
-        // --- SUBKONTO: kwartalne wskaźniki (przykłady; Q3–Q4 2025 = fallback do czasu publikacji) ---
-        for (int q = 1; q <= 4; q++) putQuarter(2024, q, "102.48");
+        // --- SUBKONTO: kwartalne wskaźniki (OFICJALNE DANE ZUS) ---
+        // Źródło: https://wskazniki.gofin.pl/8,378,2/
+        // 2024
+        putQuarter(2024, 1, "112.48");
+        putQuarter(2024, 2, "105.85");
+        putQuarter(2024, 3, "101.60");
+        putQuarter(2024, 4, "100.70");
+        // 2025
         putQuarter(2025, 1, "111.60");
         putQuarter(2025, 2, "102.09");
-        putQuarter(2025, 3, "101.50");
-        putQuarter(2025, 4, "101.50");
+        putQuarter(2025, 3, "101.50"); // estimated - do aktualizacji po publikacji
+        putQuarter(2025, 4, "101.50"); // estimated - do aktualizacji po publikacji
 
-        // --- Przeciętne wynagrodzenie miesięczne (PLN) – 2024–2025 z kwartalnych, dalej projekcja ---
-        BigDecimal w2024 = avgOf(new BigDecimal("8161.62"), new BigDecimal("8477.21")); // Q3/Q4 przykładowo
-        avgWageMonthly.put(2024, w2024);
-        BigDecimal w2025 = avgOf(new BigDecimal("8962.28"), new BigDecimal("8748.63")); // Q1/Q2 przykładowo
-        avgWageMonthly.put(2025, w2025);
+        // --- Przeciętne wynagrodzenie miesięczne (PLN) - OFICJALNE DANE GUS ---
+        // Źródło: https://stat.gov.pl/
+        // 2024 - roczne przeciętne wynagrodzenie
+        avgWageMonthly.put(2024, new BigDecimal("8181.72")); // GUS obwieszczenie 2024
+        // 2025 - Q1 2025
+        avgWageMonthly.put(2025, new BigDecimal("8962.28")); // GUS komunikat Q1 2025
 
         for (int y = 2026; y <= 2080; y++) {
             BigDecimal prev = avgWageMonthly.get(y - 1);

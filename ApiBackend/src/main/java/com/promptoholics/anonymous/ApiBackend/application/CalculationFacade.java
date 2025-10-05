@@ -27,7 +27,10 @@ public class CalculationFacade {
     private final PensionCalculatorService calculator = new PensionCalculatorService(); // silnik (miesięczny)
 
     public PensionCalculationResponseDto calculatePensions(PensionCalculationRequestDto req) {
-        // 1) Silnik (wyniki miesięczne)
+        // 1) Parse work breaks from additionalSalaryChanges
+        List<PensionCalculatorService.WorkBreak> workBreaks = parseWorkBreaks(req);
+
+        // 2) Silnik (wyniki miesięczne)
         var in = new PensionCalculatorService.Input(
                 toBD(req.getExpectedPensionPLN()),                // traktujemy jako miesięczne "expected"
                 req.getAge(),
@@ -38,7 +41,9 @@ public class CalculationFacade {
                 Boolean.TRUE.equals(req.getIncludeSickLeave()),
                 toBD(fromJN(req.getZusAccountFundsPLN())),
                 BigDecimal.ZERO,
-                fromJN(req.getPostalCode())
+                fromJN(req.getPostalCode()),
+                req.getAdditionalSickLeaveDaysPerYear(),          // dodatkowe dni chorobowe rocznie
+                workBreaks                                         // przerwy w pracy
         );
         var out = calculator.calculate(in);
 
@@ -160,6 +165,60 @@ public class CalculationFacade {
     }
 
     /* ===================== helpers ===================== */
+
+    /**
+     * Parse work breaks from additionalSalaryChanges (BREAK type entries)
+     */
+    private List<PensionCalculatorService.WorkBreak> parseWorkBreaks(PensionCalculationRequestDto req) {
+        if (req.getAdditionalSalaryChanges() == null || req.getAdditionalSalaryChanges().isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<PensionCalculatorService.WorkBreak> breaks = new ArrayList<>();
+        for (var change : req.getAdditionalSalaryChanges()) {
+            // Check if this is a BREAK type change
+            String changeType = getChangeType(change);
+            if ("BREAK".equalsIgnoreCase(changeType)) {
+                OffsetDateTime startDate = getStartDate(change);
+                OffsetDateTime endDate = getEndDate(change);
+
+                if (startDate != null && endDate != null) {
+                    int startYear = startDate.getYear();
+                    int endYear = endDate.getYear();
+                    breaks.add(new PensionCalculatorService.WorkBreak(startYear, endYear));
+                }
+            }
+        }
+        return breaks;
+    }
+
+    private String getChangeType(Object change) {
+        try {
+            Method m = change.getClass().getMethod("getChangeType");
+            Object result = m.invoke(change);
+            return result != null ? result.toString() : null;
+        } catch (Exception ignore) {
+            return null;
+        }
+    }
+
+    private OffsetDateTime getStartDate(Object change) {
+        try {
+            Method m = change.getClass().getMethod("getStartDate");
+            return (OffsetDateTime) m.invoke(change);
+        } catch (Exception ignore) {
+            return null;
+        }
+    }
+
+    private OffsetDateTime getEndDate(Object change) {
+        try {
+            Method m = change.getClass().getMethod("getEndDate");
+            return (OffsetDateTime) m.invoke(change);
+        } catch (Exception ignore) {
+            return null;
+        }
+    }
 
     private static BigDecimal toBD(Float f){ return f==null? null : BigDecimal.valueOf(f.doubleValue()); }
     private static <T> T fromJN(JsonNullable<T> jn){ return (jn!=null && jn.isPresent())? jn.get() : null; }

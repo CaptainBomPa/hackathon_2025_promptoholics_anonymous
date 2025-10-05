@@ -114,8 +114,15 @@ const transformDashboardToApiFormat = (parameters) => {
       customDays: sickLeave?.customDays,
     },
     
-    // Salary Timeline
-    salaryTimeline: salaryTimeline?.entries || [],
+    // Salary Timeline - transform to API format
+    salaryTimeline: (salaryTimeline?.entries || []).map(entry => ({
+      year: entry.startDate ? new Date(entry.startDate).getFullYear() : null,
+      endYear: entry.endDate ? new Date(entry.endDate).getFullYear() : null,
+      type: entry.type,
+      grossAmount: entry.grossAmount,
+      startDate: entry.startDate,
+      endDate: entry.endDate,
+    })),
   };
 };
 
@@ -197,11 +204,22 @@ function calculateSalaryProgression(basic, salaryTimeline, indexation) {
   
   for (let year = basic.startYear; year <= basic.plannedEndYear; year++) {
     // Check if user provided custom salary for this year
-    const customEntry = entries.find(entry => entry.year === year);
+    // Timeline entries have startDate/endDate, so we need to check if year falls within any period
+    const customEntry = entries.find(entry => {
+      if (entry.type !== 'salary') return false; // Only salary entries count
+      
+      const startYear = entry.startDate ? new Date(entry.startDate).getFullYear() : null;
+      const endYear = entry.endDate ? new Date(entry.endDate).getFullYear() : null;
+      
+      return startYear && endYear && year >= startYear && year <= endYear;
+    });
     
     let amount;
     if (customEntry && timeline.useCustomValues) {
-      amount = customEntry.amount;
+      amount = customEntry.grossAmount;
+    } else if (customEntry) {
+      // Use custom salary from timeline even if useCustomValues is false
+      amount = customEntry.grossAmount;
     } else {
       // Calculate indexed salary
       const yearsFromStart = year - basic.startYear;
@@ -212,7 +230,7 @@ function calculateSalaryProgression(basic, salaryTimeline, indexation) {
     progression.push({
       year,
       amount: Math.round(amount),
-      isCustom: customEntry && salaryTimeline.useCustomValues,
+      isCustom: !!customEntry,
       isProjected: year > currentYear,
     });
   }
