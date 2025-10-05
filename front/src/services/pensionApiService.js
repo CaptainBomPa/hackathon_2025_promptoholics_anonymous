@@ -90,7 +90,7 @@ const transformApiResponse = (apiResponse) => {
     accountGrowthProjection: transformZUSAccountData(result.zusAccountFundsByYear || []),
 
     // Generate salary projection (mock for now - could be enhanced)
-    salaryProjection: generateSalaryProjection(result),
+    salaryProjection: result.salaryProjection,
   };
 };
 
