@@ -343,8 +343,12 @@ public class CalculationFacadeV3 {
             for (int m = 1; m <= 12; m++) {
                 sumMonths += monthly.getOrDefault(YearMonth.of(y, m), 0.0);
             }
-            double annualBase = sumMonths * pensionBaseFactor;
-            double annualContrib = annualBase * EFFECTIVE_PENSION_CONTRIB_RATE;
+            double annualBaseRaw = sumMonths * pensionBaseFactor;
+
+            // LIMIT 30-krotności prognozowanego przeciętnego wynagrodzenia miesięcznego
+            double annualBaseCapped = Math.min(annualBaseRaw, macro.annualContributionBaseCapPLN(y));
+
+            double annualContrib = annualBaseCapped * EFFECTIVE_PENSION_CONTRIB_RATE;
 
             double cap = macro.accountIndexationYoY(y); // łagodniejsza od pełnego nominalu
             pot = pot * (1.0 + cap) + annualContrib;
@@ -387,8 +391,12 @@ public class CalculationFacadeV3 {
             for (int m = 1; m <= 12; m++) {
                 sumMonths += extended.getOrDefault(YearMonth.of(y, m), 0.0);
             }
-            double annualBase = sumMonths * contract.pensionBaseFactor;
-            double annualContrib = annualBase * EFFECTIVE_PENSION_CONTRIB_RATE;
+            double annualBaseRaw = sumMonths * contract.pensionBaseFactor;
+
+            // LIMIT 30-krotności prognozowanego przeciętnego wynagrodzenia miesięcznego
+            double annualBaseCapped = Math.min(annualBaseRaw, macro.annualContributionBaseCapPLN(y));
+
+            double annualContrib = annualBaseCapped * EFFECTIVE_PENSION_CONTRIB_RATE;
 
             double cap = macro.accountIndexationYoY(y);
             pot = pot * (1.0 + cap) + annualContrib;
@@ -495,6 +503,33 @@ public class CalculationFacadeV3 {
                 avg *= (1.0 + idx);
             }
             return avg;
+        }
+
+        // ===== NOWE: prognoza przeciętnego wynagrodzenia oraz limit 30-krotności =====
+
+        // BAZA do prognozy przeciętnego wynagrodzenia miesięcznego (podmień na oficjalną prognozę)
+        private static final int AVG_WAGE_BASE_YEAR = 2025;
+        private static final double AVG_WAGE_BASE_MONTHLY_PLN = 8000.0; // TODO: zasil danymi z MRPiPS/GUS
+
+        /** Prognozowane przeciętne wynagrodzenie miesięczne (PLN/m-c) w danym roku. */
+        public double forecastAvgMonthlyWagePLN(int year) {
+            double w = AVG_WAGE_BASE_MONTHLY_PLN;
+            if (year == AVG_WAGE_BASE_YEAR) return w;
+            if (year > AVG_WAGE_BASE_YEAR) {
+                for (int y = AVG_WAGE_BASE_YEAR; y < year; y++) {
+                    w *= (1.0 + nominalWageGrowth(y));
+                }
+            } else { // year < base
+                for (int y = year; y < AVG_WAGE_BASE_YEAR; y++) {
+                    w /= (1.0 + nominalWageGrowth(y));
+                }
+            }
+            return w;
+        }
+
+        /** Roczna podstawa wymiaru składek E+R – limit "30-krotności" na dany rok. */
+        public double annualContributionBaseCapPLN(int year) {
+            return 30.0 * forecastAvgMonthlyWagePLN(year);
         }
     }
 
