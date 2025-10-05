@@ -8,7 +8,6 @@ import ContrastIcon from '@mui/icons-material/Contrast'
 import AddIcon from '@mui/icons-material/Add'
 import RemoveIcon from '@mui/icons-material/Remove'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
-import RefreshIcon from '@mui/icons-material/Refresh'
 import { useNavigate } from 'react-router-dom'
 import { useUiPrefs } from '../contexts/UiPrefsContext'
 import WizardProgress from "../components/common/WizardProgress"
@@ -154,17 +153,21 @@ export default function HomePage() {
                     <Box sx={{ maxWidth: 1280, mx: 'auto' }}>
                         <WizardProgress current={1} steps={4} />
 
-                        {/* DWA PANELE OBOK SIEBIE: 60% / 40% */}
+                        {/* DWA PANELE: 60% / 40% */}
                         <Grid
                             container
-                            columns={{ xs: 12, md: 10 }}
                             columnSpacing={3}
                             rowSpacing={3}
                             alignItems="stretch"
                             sx={{ flexWrap: { xs: 'wrap', md: 'nowrap' } }}
                         >
                             {/* 60% */}
-                            <Grid item xs={12} md={6}>
+                            <Grid
+                                item
+                                xs={12}
+                                md={8}
+                                sx={{ minWidth: 0, flexBasis: { md: '60%' }, maxWidth: { md: '60%' } }}
+                            >
                                 <Paper
                                     elevation={0}
                                     sx={{
@@ -175,7 +178,8 @@ export default function HomePage() {
                                         boxShadow: (t) => t.shadows[3],
                                         height: '100%',
                                         display: 'flex',
-                                        flexDirection: 'column'
+                                        flexDirection: 'column',
+                                        minWidth: 0
                                     }}
                                 >
                                     <Typography variant="h3" sx={{ fontWeight: 900, lineHeight: 1.1, mb: 1 }}>
@@ -209,7 +213,12 @@ export default function HomePage() {
                             </Grid>
 
                             {/* 40% */}
-                            <Grid item xs={12} md={4}>
+                            <Grid
+                                item
+                                xs={12}
+                                md={4}
+                                sx={{ minWidth: 0, flexBasis: { md: '40%' }, maxWidth: { md: '40%' } }}
+                            >
                                 <Paper
                                     elevation={0}
                                     sx={{
@@ -221,10 +230,12 @@ export default function HomePage() {
                                         justifyContent: 'space-between',
                                         bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(20,24,36,0.70)' : 'rgba(255,255,255,0.85)',
                                         backdropFilter: 'saturate(180%) blur(6px)',
-                                        boxShadow: (t) => t.shadows[3]
+                                        boxShadow: (t) => t.shadows[3],
+                                        minWidth: 0,
+                                        overflow: 'hidden' // nie pozwól wychodzić poza kartę
                                     }}
                                 >
-                                    <Box>
+                                    <Box sx={{ minWidth: 0 }}>
                                         <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 1 }}>
                                             CZY WIESZ, ŻE…
                                         </Typography>
@@ -243,38 +254,54 @@ export default function HomePage() {
 
                                         {!factLoading && fact && (
                                             <>
-                                                <Typography variant="h6" sx={{ fontWeight: 900, lineHeight: 1.3, mt: 1 }}>
+                                                <Typography
+                                                    variant="h6"
+                                                    sx={{
+                                                        fontWeight: 900,
+                                                        lineHeight: 1.3,
+                                                        mt: 1,
+                                                        overflowWrap: 'anywhere',
+                                                        wordBreak: 'break-word',
+                                                        whiteSpace: 'normal'
+                                                    }}
+                                                >
                                                     {fact.text}
                                                 </Typography>
+
                                                 {fact.source?.name && (
-                                                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                                                        Źródło: {fact.source.url ? (
-                                                        <Link href={fact.source.url} target="_blank" rel="noreferrer">
-                                                            {fact.source.name}
-                                                        </Link>
-                                                    ) : fact.source.name}
+                                                    <Typography
+                                                        variant="caption"
+                                                        color="text.secondary"
+                                                        sx={{
+                                                            mt: 1,
+                                                            display: 'block',
+                                                            // >>> ZAWIJANIE ŹRÓDŁA/URL <<
+                                                            overflowWrap: 'anywhere',
+                                                            wordBreak: 'break-word',
+                                                            whiteSpace: 'normal'
+                                                        }}
+                                                    >
+                                                        Źródło:{' '}
+                                                        {fact.source.url ? (
+                                                            <Link
+                                                                href={fact.source.url}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                sx={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}
+                                                            >
+                                                                {fact.source.name}
+                                                            </Link>
+                                                        ) : fact.source.name}
                                                     </Typography>
                                                 )}
                                             </>
                                         )}
                                     </Box>
-
-                                    <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-                                        <Button
-                                            size="small"
-                                            variant="outlined"
-                                            startIcon={<RefreshIcon />}
-                                            onClick={fetchFact}
-                                            disabled={factLoading}
-                                        >
-                                            Losuj inny fakt
-                                        </Button>
-                                    </Stack>
                                 </Paper>
                             </Grid>
                         </Grid>
 
-                        {/* WYKRES: POD PANELEM 60/40, NAD STOPKĄ, TA SAMA SZEROKOŚĆ */}
+                        {/* WYKRES: POD PANELEM 60/40, NAD STOPKĄ */}
                         <AvgPensionChart data={chartData} currencyFormatter={nf} />
 
                         {/* STOPKA */}
