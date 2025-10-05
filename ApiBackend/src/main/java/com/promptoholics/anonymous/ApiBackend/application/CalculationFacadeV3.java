@@ -509,7 +509,7 @@ public class CalculationFacadeV3 {
 
         // BAZA do prognozy przeciętnego wynagrodzenia miesięcznego (podmień na oficjalną prognozę)
         private static final int AVG_WAGE_BASE_YEAR = 2025;
-        private static final double AVG_WAGE_BASE_MONTHLY_PLN = 8000.0; // TODO: zasil danymi z MRPiPS/GUS
+        private static final double AVG_WAGE_BASE_MONTHLY_PLN = 8000.0;
 
         /** Prognozowane przeciętne wynagrodzenie miesięczne (PLN/m-c) w danym roku. */
         public double forecastAvgMonthlyWagePLN(int year) {
