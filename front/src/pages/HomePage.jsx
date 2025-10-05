@@ -12,9 +12,9 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import { useNavigate } from 'react-router-dom'
 import { useUiPrefs } from '../contexts/UiPrefsContext'
 import WizardProgress from "../components/common/WizardProgress"
-import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar } from 'recharts'
 import occupations from '../data/occupationsPensions.json'
 import pensionApiService from '../services/pensionApiService'
+import AvgPensionChart from '../components/AvgPensionChart' // wykres w osobnym komponencie
 
 export default function HomePage() {
     const navigate = useNavigate()
@@ -71,20 +71,14 @@ export default function HomePage() {
         navigate('/simulator', { state: { expectedPension: Number(expectedPension) } })
     }
 
-    const nf = useMemo(() => new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN', maximumFractionDigits: 2 }), [])
-    const chartData = useMemo(() => occupations.map(o => ({ ...o, avg: (o.female + o.male) / 2 })), [])
-    const tooltipContent = ({ active, payload, label }) => {
-        if (!active || !payload || !payload.length) return null
-        const p = payload[0].payload
-        return (
-            <Paper sx={{ p: 1.25 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{label}</Typography>
-                <Typography variant="body2">Średnia: {nf.format(p.avg)}</Typography>
-                <Typography variant="body2">Mężczyźni: {nf.format(p.male)}</Typography>
-                <Typography variant="body2">Kobiety: {nf.format(p.female)}</Typography>
-            </Paper>
-        )
-    }
+    const nf = useMemo(
+        () => new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN', maximumFractionDigits: 2 }),
+        []
+    )
+    const chartData = useMemo(
+        () => occupations.map(o => ({ ...o, avg: (o.female + o.male) / 2 })),
+        []
+    )
 
     return (
         <Box
@@ -99,6 +93,7 @@ export default function HomePage() {
                         : 'radial-gradient(1200px 400px at 10% 0%, rgba(0,200,120,0.18), rgba(255,255,255,0) 60%), linear-gradient(135deg, rgba(0,153,63,0.06), rgba(63,132,210,0.06))'
             }}
         >
+            {/* HEADER */}
             <Box
                 component="header"
                 sx={{
@@ -153,13 +148,23 @@ export default function HomePage() {
                 </Container>
             </Box>
 
+            {/* MAIN */}
             <Box sx={{ flex: 1, py: { xs: 4, md: 6 } }}>
                 <Container maxWidth={false} sx={{ px: { xs: 2, md: 3 } }}>
                     <Box sx={{ maxWidth: 1280, mx: 'auto' }}>
                         <WizardProgress current={1} steps={4} />
 
-                        <Grid container columnSpacing={3} rowSpacing={3} alignItems="stretch" sx={{ flexWrap: { xs: 'wrap', md: 'nowrap' } }}>
-                            <Grid item xs={12} md={8}>
+                        {/* DWA PANELE OBOK SIEBIE: 60% / 40% */}
+                        <Grid
+                            container
+                            columns={{ xs: 12, md: 10 }}
+                            columnSpacing={3}
+                            rowSpacing={3}
+                            alignItems="stretch"
+                            sx={{ flexWrap: { xs: 'wrap', md: 'nowrap' } }}
+                        >
+                            {/* 60% */}
+                            <Grid item xs={12} md={6}>
                                 <Paper
                                     elevation={0}
                                     sx={{
@@ -167,7 +172,10 @@ export default function HomePage() {
                                         borderRadius: 1,
                                         bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(20,24,36,0.70)' : 'rgba(255,255,255,0.85)',
                                         backdropFilter: 'saturate(180%) blur(6px)',
-                                        boxShadow: (t) => t.shadows[3]
+                                        boxShadow: (t) => t.shadows[3],
+                                        height: '100%',
+                                        display: 'flex',
+                                        flexDirection: 'column'
                                     }}
                                 >
                                     <Typography variant="h3" sx={{ fontWeight: 900, lineHeight: 1.1, mb: 1 }}>
@@ -196,27 +204,11 @@ export default function HomePage() {
                                         <Stack direction="row" spacing={1.25}>
                                             <Button variant="contained" onClick={startSimulation} disabled={!canGo}>Przejdź do symulacji</Button>
                                         </Stack>
-
-                                        <Box sx={{ mt: 2 }}>
-                                            <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>
-                                                Średnie emerytury wg zawodu (K+M)/2
-                                            </Typography>
-                                            <Box sx={{ width: '100%', height: 360 }}>
-                                                <ResponsiveContainer>
-                                                    <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 24 }}>
-                                                        <CartesianGrid strokeDasharray="3 3" />
-                                                        <XAxis dataKey="name" interval={0} angle={-20} textAnchor="end" height={70} tick={{ fontSize: 12 }} />
-                                                        <YAxis tickFormatter={(v) => nf.format(v)} width={90} />
-                                                        <Tooltip content={tooltipContent} />
-                                                        <Bar dataKey="avg" />
-                                                    </BarChart>
-                                                </ResponsiveContainer>
-                                            </Box>
-                                        </Box>
                                     </Box>
                                 </Paper>
                             </Grid>
 
+                            {/* 40% */}
                             <Grid item xs={12} md={4}>
                                 <Paper
                                     elevation={0}
@@ -282,6 +274,10 @@ export default function HomePage() {
                             </Grid>
                         </Grid>
 
+                        {/* WYKRES: POD PANELEM 60/40, NAD STOPKĄ, TA SAMA SZEROKOŚĆ */}
+                        <AvgPensionChart data={chartData} currencyFormatter={nf} />
+
+                        {/* STOPKA */}
                         <Divider sx={{ my: 3, opacity: 0.6 }} />
                         <Typography variant="caption" color="text.secondary">
                             © ZUS (mock) • Prototyp UI — dane i wyliczenia są fikcyjne.

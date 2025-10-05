@@ -1,12 +1,130 @@
 [
-  { "name": "Sprzedawcy w sklepach", "female": 3421.61, "male": 4978.67 },
-  { "name": "Specj. admin. i zarządzania", "female": 3421.61, "male": 4978.67 },
-  { "name": "Kierowcy ciężarówek/ciągników", "female": 3421.61, "male": 4978.67 },
-  { "name": "Operatorzy obrabiarek", "female": 3421.61, "male": 4978.67 },
-  { "name": "Pomoce i sprzątaczki", "female": 3421.61, "male": 4978.67 },
-  { "name": "Technicy nauk i techniki", "female": 3421.61, "male": 4978.67 },
-  { "name": "Pielęgniarki", "female": 3421.61, "male": 4978.67 },
-  { "name": "Robotnicy stanu surowego", "female": 3421.61, "male": 4978.67 },
-  { "name": "Mechanicy maszyn/pojazdów", "female": 3421.61, "male": 4978.67 },
-  { "name": "Operatorzy przetw. tworzyw", "female": 3421.61, "male": 4978.67 }
+  {
+    "id": 1,
+    "name": "Pracownicy, osoby pobierające świadczenie szkoleniowe wypłacone po ustaniu zatrudnienia oraz byli pracownicy mianowani lub byli urzędnicy służby cywilnej, z którymi został rozwiązany stosunek pracy, pobierający świadczenie pieniężne za okres po ustaniu zatrudnienia",
+    "short": "Pracownicy",
+    "female": 4136.41,
+    "male": 5748.66,
+    "base": 6511.98
+  },
+  {
+    "id": 2,
+    "name": "Osoba wykonująca pracę nakładczą",
+    "short": "Praca nakładcza",
+    "female": 2903.61,
+    "male": 2864.6,
+    "base": 2821.37
+  },
+  {
+    "id": 3,
+    "name": "Członkowie RSP i SKR oraz osoby z nimi zrównane",
+    "short": "RSP/SKR",
+    "female": 3527.81,
+    "male": 6317.78,
+    "base": 6326.02
+  },
+  {
+    "id": 4,
+    "name": "Umowa zlecenia/agencyjna lub inna o świadczenie usług (w tym współpracujący)",
+    "short": "Zlecenie/usługi",
+    "female": 2451.38,
+    "male": 4298.9,
+    "base": 2696.65
+  },
+  {
+    "id": 5,
+    "name": "Osoby prowadzące pozarolniczą działalność oraz osoby z nimi współpracujące",
+    "short": "Działalność gosp.",
+    "female": 2955.72,
+    "male": 4207.11,
+    "base": 2045.92
+  },
+  {
+    "id": 6,
+    "name": "Poseł lub senator pobierający uposażenie",
+    "short": "Poseł/Senator",
+    "female": 6025.58,
+    "male": 8799.92,
+    "base": 9561.47
+  },
+  {
+    "id": 7,
+    "name": "Osoby wykonujące odpłatnie pracę na podstawie skierowania do pracy, w czasie odbywania kary lub tymczasowego aresztowania",
+    "short": "Skier. do pracy",
+    "female": 1303.8,
+    "male": 1909.21,
+    "base": 1929.44
+  },
+  {
+    "id": 8,
+    "name": "Osoby bezrobotne",
+    "short": "Bezrobotni",
+    "female": 2365.46,
+    "male": 3983.2,
+    "base": 1343.11
+  },
+  {
+    "id": 9,
+    "name": "Duchowny",
+    "short": "Duchowny",
+    "female": 2345.36,
+    "male": 2782.97,
+    "base": 1545.27
+  },
+  {
+    "id": 10,
+    "name": "Świadczenia socjalne (urlop/rekfalifikacja/stypendium na przekwalifikowanie)",
+    "short": "Świadczenia socjalne",
+    "female": 5106.49,
+    "male": 7308.27,
+    "base": 4894.23
+  },
+  {
+    "id": 11,
+    "name": "Świadczeniobiorca, za którego OPS/gmina ma obowiązek opłacać składki",
+    "short": "OPS/Gmina",
+    "female": 1458.03,
+    "male": 2032.46,
+    "base": 1618.64
+  },
+  {
+    "id": 12,
+    "name": "Osoba niepodejmująca zatrudnienia z powodu wsparcia osoby ze świadczeniem wspierającym (ubezp. społ. i zdrowotne)",
+    "short": "Opiekun (świadczenie)",
+    "female": 2057.08,
+    "male": 3495.07,
+    "base": 1689.76
+  },
+  {
+    "id": 13,
+    "name": "Doktorant podlegający z tego tytułu ubezpieczeniom społecznym",
+    "short": "Doktorant",
+    "female": null,
+    "male": 2897.91,
+    "base": 3788.86
+  },
+  {
+    "id": 14,
+    "name": "Osoba podlegająca dobrowolnie ubezpieczeniom emerytalnemu i rentowym",
+    "short": "Dobrowolne ubezp.",
+    "female": 2479.55,
+    "male": 4318.03,
+    "base": 3549.15
+  },
+  {
+    "id": 15,
+    "name": "Członek rady nadzorczej",
+    "short": "Rada nadzorcza",
+    "female": 5336.61,
+    "male": 6764.78,
+    "base": 2382.04
+  },
+  {
+    "id": 16,
+    "name": "Inny tytuł do ubezpieczeń (kod tytułu 5000)",
+    "short": "Inny tytuł (5000)",
+    "female": 3946.32,
+    "male": 5819.98,
+    "base": 3927.82
+  }
 ]
