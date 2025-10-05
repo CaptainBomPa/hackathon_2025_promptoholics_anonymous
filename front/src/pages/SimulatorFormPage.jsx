@@ -195,7 +195,7 @@ export default function SimulatorFormPage() {
 
                         <Box sx={{ mt: 1 }}>
                             <Typography variant="caption" color="text.secondary">
-                                © ZUS (mock) • Ten plik to prototyp UI do warsztatów — wartości i obliczenia są fikcyjne.
+                                © ZUS
                             </Typography>
                         </Box>
                     </Box>

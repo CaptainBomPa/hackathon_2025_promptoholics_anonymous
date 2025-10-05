@@ -53,8 +53,8 @@ export default function AppHeader({ canGo = true, onStart }) {
 
                     <Stack direction="row" spacing={1}>
                         <Button size="small" startIcon={<ContrastIcon />} onClick={toggleMode} variant="outlined">Kontrast</Button>
-                        <Button size="small" startIcon={<AddIcon />} onClick={decFont} variant="outlined">A+</Button>
-                        <Button size="small" startIcon={<RemoveIcon />} onClick={incFont} variant="outlined">A−</Button>
+                        <Button size="small" startIcon={<AddIcon />} onClick={incFont} variant="outlined">A</Button>
+                        <Button size="small" startIcon={<RemoveIcon />} onClick={decFont} variant="outlined">A</Button>
                         <Button size="small" startIcon={<PlayArrowIcon />} onClick={onStart} variant="contained" disabled={!canGo}>Rozpocznij</Button>
                     </Stack>
                 </Box>
