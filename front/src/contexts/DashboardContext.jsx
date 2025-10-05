@@ -24,7 +24,7 @@ const initialState = {
       defaultGrowthRate: 3.5,
     },
     sickLeave: {
-      mode: 'averaged', // 'averaged' | 'custom' | 'none'
+      mode: 'none', // 'averaged' | 'custom' | 'none'
       customDays: 0,
       historicalPeriods: [],
       projectedPeriods: [],

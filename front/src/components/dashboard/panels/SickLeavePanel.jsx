@@ -75,14 +75,14 @@ const ModeButton = styled(ToggleButton)(({ theme }) => ({
 const SickLeavePanel = () => {
     const { state, actions } = useDashboard();
     const initial = state?.parameters?.sickLeave || {};
-    const [sickLeaveMode, setSickLeaveMode] = useState(initial.mode || 'averaged');
+    const [sickLeaveMode, setSickLeaveMode] = useState(initial.mode || 'none');
     const [customDays, setCustomDays] = useState(
         typeof initial.customDays === 'number' ? String(initial.customDays) : ''
     );
     const [error, setError] = useState('');
 
     useEffect(() => {
-        if (!initial.mode) actions.setSickLeaveMode('averaged');
+        if (!initial.mode) actions.setSickLeaveMode('none');
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 

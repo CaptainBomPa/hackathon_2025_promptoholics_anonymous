@@ -16,6 +16,7 @@ import {
     Assessment,
     Timeline,
     Work,
+    LocalHospital,
 } from '@mui/icons-material';
 import { useDashboard } from '../../contexts/DashboardContext';
 import { zusColors } from '../../constants/zus-colors';
@@ -303,14 +304,42 @@ const DashboardMainContent = () => {
                 </Box>
             </Box>
 
-            {/* Work After Retirement Section - moved to bottom */}
-            {state.parameters.zusAccount?.workAfterRetirement > 0 && (
-                <WorkAfterRetirementCard 
-                    workAfterRetirement={state.parameters.zusAccount.workAfterRetirement}
-                    postponedData={state.results?.ifPostponedYears}
-                    currentPension={state.results?.actualAmountPLN}
-                    loading={state.uiState.isCalculating}
-                />
+            {/* Summary Cards Section - Sick Leave and Work After Retirement */}
+            {(state.parameters.sickLeave?.mode !== 'none' || state.parameters.zusAccount?.workAfterRetirement > 0) && (
+                <Box sx={{ 
+                    mt: 4,
+                    display: 'grid',
+                    gridTemplateColumns: { 
+                        xs: '1fr', 
+                        sm: '1fr 1fr'
+                    },
+                    gap: 3,
+                    maxWidth: '1200px',
+                    mx: 'auto',
+                    px: 2
+                }}>
+                    {/* Sick Leave Card */}
+                    {state.parameters.sickLeave?.mode !== 'none' && (
+                        <SickLeaveCard 
+                            sickLeaveMode={state.parameters.sickLeave?.mode}
+                            customDays={state.parameters.sickLeave?.customDays}
+                            currentPension={state.results?.actualAmountPLN}
+                            wageWithSickLeave={state.results?.wageInclSickLeavePLN}
+                            wageWithoutSickLeave={state.results?.wageExclSickLeavePLN}
+                            loading={state.uiState.isCalculating}
+                        />
+                    )}
+                    
+                    {/* Work After Retirement Card */}
+                    {state.parameters.zusAccount?.workAfterRetirement > 0 && (
+                        <WorkAfterRetirementCard 
+                            workAfterRetirement={state.parameters.zusAccount.workAfterRetirement}
+                            postponedData={state.results?.ifPostponedYears}
+                            currentPension={state.results?.actualAmountPLN}
+                            loading={state.uiState.isCalculating}
+                        />
+                    )}
+                </Box>
             )}
         </Box>
     );
@@ -476,6 +505,148 @@ const MetricCard = ({
     );
 };
 
+const SickLeaveCard = ({ sickLeaveMode, customDays, currentPension, wageWithSickLeave, wageWithoutSickLeave, loading }) => {
+    // Oblicz wpływ zwolnień chorobowych
+    const calculateSickLeaveImpact = () => {
+        if (sickLeaveMode === 'none') {
+            return { impact: 0, description: 'Zwolnienia nie są uwzględniane' };
+        }
+        
+        if (sickLeaveMode === 'averaged') {
+            // Średnia krajowa ~12-15 dni rocznie, wpływ ~2-4%
+            const averageImpact = (currentPension || 0) * 0.03; // 3% średni wpływ
+            return { 
+                impact: Math.round(averageImpact), 
+                description: 'Średnia krajowa: ~12-15 dni/rok' 
+            };
+        }
+        
+        if (sickLeaveMode === 'custom' && customDays > 0) {
+            // Szacunkowy wpływ na podstawie liczby dni
+            // Każdy dzień chorobowy to ~0.27% rocznego wynagrodzenia mniej składek
+            const dailyImpact = (currentPension || 0) * 0.0027;
+            const totalImpact = dailyImpact * customDays;
+            return { 
+                impact: Math.round(totalImpact), 
+                description: `${customDays} dni rocznie` 
+            };
+        }
+        
+        return { impact: 0, description: 'Brak danych' };
+    };
+
+    const { impact, description } = calculateSickLeaveImpact();
+    const percent = currentPension > 0 ? Math.round((impact / currentPension) * 100) : 0;
+    
+    // Użyj danych z API jeśli dostępne
+    const actualImpact = wageWithSickLeave && wageWithoutSickLeave 
+        ? Math.round(wageWithoutSickLeave - wageWithSickLeave)
+        : impact;
+    
+    const actualPercent = wageWithSickLeave && wageWithoutSickLeave && wageWithoutSickLeave > 0
+        ? Math.round(((wageWithoutSickLeave - wageWithSickLeave) / wageWithoutSickLeave) * 100)
+        : percent;
+
+    return (
+        <Paper
+            elevation={0}
+            sx={{
+                width: '100%',
+                p: 3,
+                borderRadius: 1,
+                bgcolor: '#fff',
+                border: '1px solid rgba(0,0,0,0.06)',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.06)',
+            }}
+        >
+            {/* Nagłówek */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                <Box
+                    sx={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 2,
+                        display: 'grid',
+                        placeItems: 'center',
+                        bgcolor: zusColors.error,
+                        color: '#fff',
+                        boxShadow: `0 6px 18px ${zusColors.error}44`,
+                        flexShrink: 0,
+                    }}
+                >
+                    <LocalHospital sx={{ fontSize: 24 }} />
+                </Box>
+
+                <Box sx={{ minWidth: 0 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 800, color: zusColors.dark, lineHeight: 1.1 }}>
+                        Zwolnienia chorobowe
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: `${zusColors.dark}99` }}>
+                        {description}
+                    </Typography>
+                </Box>
+
+                {/* Procent – mała pastylka */}
+                {!loading && actualImpact > 0 && (
+                    <Box
+                        sx={{
+                            ml: 'auto',
+                            px: 1.25,
+                            py: 0.5,
+                            borderRadius: 999,
+                            fontSize: 12,
+                            fontWeight: 800,
+                            bgcolor: `${zusColors.error}15`,
+                            color: zusColors.error,
+                            border: `1px solid ${zusColors.error}33`,
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
+                        -{actualPercent}% emerytury
+                    </Box>
+                )}
+            </Box>
+
+            {/* Treść */}
+            {loading ? (
+                <Box>
+                    <Skeleton variant="text" width="60%" height={36} sx={{ mb: 1 }} />
+                    <Skeleton variant="rounded" height={10} />
+                </Box>
+            ) : (
+                <Box>
+                    <Box
+                        sx={{
+                            p: 2,
+                            borderRadius: 2,
+                            border: "0px",
+                            bgcolor: '#fff',
+                        }}
+                    >
+                        <Typography variant="caption" sx={{ color: `${zusColors.dark}99`, fontWeight: 700 }}>
+                            {actualImpact > 0 ? 'Szacunkowa strata miesięczna' : 'Wpływ na emeryturę'}
+                        </Typography>
+                        <Typography
+                            variant="h5"
+                            sx={{
+                                mt: 0.5,
+                                fontWeight: 900,
+                                color: actualImpact > 0 ? zusColors.error : zusColors.success,
+                                lineHeight: 1.15,
+                            }}
+                        >
+                            {actualImpact > 0 
+                                ? `-${actualImpact.toLocaleString('pl-PL')} PLN / mies.`
+                                : 'Brak wpływu'
+                            }
+                        </Typography>
+                    </Box>
+                </Box>
+            )}
+        </Paper>
+    );
+};
+
 const WorkAfterRetirementCard = ({ workAfterRetirement, postponedData, currentPension, loading }) => {
     const yearsText = workAfterRetirement === 1 ? 'rok' : workAfterRetirement < 5 ? 'lata' : 'lat';
 
@@ -532,113 +703,101 @@ const WorkAfterRetirementCard = ({ workAfterRetirement, postponedData, currentPe
         Math.round(((estimatedAmount - (currentPension || 0)) / ((currentPension || 0) || 1)) * 100),
         0
     );
-    const progressValue = Math.min(percent, 100); // pasek pokazuje do 100%
 
     return (
-        <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
-            <Paper
-                elevation={0}
-                sx={{
-                    width: '45%',
-                    maxWidth: 780,
-                    p: 3,
-                    borderRadius: 1,
-                    bgcolor: '#fff',
-                    border: '1px solid rgba(0,0,0,0.06)',
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.06)',
-                }}
-            >
-                {/* Nagłówek */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-                    {/* Solid badge bez gradientu */}
-                    <Box
-                        sx={{
-                            width: 44,
-                            height: 44,
-                            borderRadius: 2,
-                            display: 'grid',
-                            placeItems: 'center',
-                            bgcolor: zusColors.primary,
-                            color: '#fff',
-                            boxShadow: `0 6px 18px ${zusColors.primary}44`,
-                            flexShrink: 0,
-                        }}
-                    >
-                        <Work sx={{ fontSize: 24 }} />
-                    </Box>
-
-                    <Box sx={{ minWidth: 0 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 800, color: zusColors.dark, lineHeight: 1.1 }}>
-                            Praca po wieku emerytalnym
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: `${zusColors.dark}99` }}>
-                            Dodatkowy okres pracy: <b>{workAfterRetirement} {yearsText}</b>
-                        </Typography>
-                    </Box>
-
-                    {/* Procent – mała pastylka */}
-                    {!loading && (
-                        <Box
-                            sx={{
-                                ml: 'auto',
-                                px: 1.25,
-                                py: 0.5,
-                                borderRadius: 999,
-                                fontSize: 12,
-                                fontWeight: 800,
-                                bgcolor: `${zusColors.success}15`,
-                                color: zusColors.success,
-                                border: `1px solid ${zusColors.success}33`,
-                                whiteSpace: 'nowrap',
-                            }}
-                        >
-                            +{percent}% vs obecnie
-                        </Box>
-                    )}
+        <Paper
+            elevation={0}
+            sx={{
+                width: '100%',
+                p: 3,
+                borderRadius: 1,
+                bgcolor: '#fff',
+                border: '1px solid rgba(0,0,0,0.06)',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.06)',
+            }}
+        >
+            {/* Nagłówek */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                <Box
+                    sx={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 2,
+                        display: 'grid',
+                        placeItems: 'center',
+                        bgcolor: zusColors.primary,
+                        color: '#fff',
+                        boxShadow: `0 6px 18px ${zusColors.primary}44`,
+                        flexShrink: 0,
+                    }}
+                >
+                    <Work sx={{ fontSize: 24 }} />
                 </Box>
 
-                {/* Treść */}
-                {loading ? (
-                    <Box>
-                        <Skeleton variant="text" width="60%" height={36} sx={{ mb: 1 }} />
-                        <Skeleton variant="rounded" height={10} />
-                    </Box>
-                ) : (
-                    <Box>
-                        {/* Dwa kafelki metryk */}
-                        <Box
+                <Box sx={{ minWidth: 0 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 800, color: zusColors.dark, lineHeight: 1.1 }}>
+                        Praca po wieku emerytalnym
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: `${zusColors.dark}99` }}>
+                        Dodatkowy okres pracy: <b>{workAfterRetirement} {yearsText}</b>
+                    </Typography>
+                </Box>
 
-                        >
-
-                            <Box
-                                sx={{
-                                    p: 2,
-                                    borderRadius: 2,
-                                    border: "0px",
-                                    bgcolor: '#fff',
-                                }}
-                            >
-                                <Typography variant="caption" sx={{ color: `${zusColors.dark}99`, fontWeight: 700 }}>
-                                    Wzrost względem obecnej
-                                </Typography>
-                                <Typography
-                                    variant="h5"
-                                    sx={{
-                                        mt: 0.5,
-                                        fontWeight: 900,
-                                        color: zusColors.primary,
-                                        lineHeight: 1.15,
-                                    }}
-                                >
-                                    +{diff.toLocaleString('pl-PL')} PLN / mies.
-                                </Typography>
-
-                            </Box>
-                        </Box>
+                {/* Procent – mała pastylka */}
+                {!loading && (
+                    <Box
+                        sx={{
+                            ml: 'auto',
+                            px: 1.25,
+                            py: 0.5,
+                            borderRadius: 999,
+                            fontSize: 12,
+                            fontWeight: 800,
+                            bgcolor: `${zusColors.success}15`,
+                            color: zusColors.success,
+                            border: `1px solid ${zusColors.success}33`,
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
+                        +{percent}% vs obecnie
                     </Box>
                 )}
-            </Paper>
-        </Box>
+            </Box>
+
+            {/* Treść */}
+            {loading ? (
+                <Box>
+                    <Skeleton variant="text" width="60%" height={36} sx={{ mb: 1 }} />
+                    <Skeleton variant="rounded" height={10} />
+                </Box>
+            ) : (
+                <Box>
+                    <Box
+                        sx={{
+                            p: 2,
+                            borderRadius: 2,
+                            border: "0px",
+                            bgcolor: '#fff',
+                        }}
+                    >
+                        <Typography variant="caption" sx={{ color: `${zusColors.dark}99`, fontWeight: 700 }}>
+                            Wzrost względem obecnej
+                        </Typography>
+                        <Typography
+                            variant="h5"
+                            sx={{
+                                mt: 0.5,
+                                fontWeight: 900,
+                                color: zusColors.primary,
+                                lineHeight: 1.15,
+                            }}
+                        >
+                            +{diff.toLocaleString('pl-PL')} PLN / mies.
+                        </Typography>
+                    </Box>
+                </Box>
+            )}
+        </Paper>
     );
 };
 
