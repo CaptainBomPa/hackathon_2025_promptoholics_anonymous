@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import {
     Box, Container, Typography, Paper, TextField, Button,
-    InputAdornment, Grid, Stack, Chip, Divider
+    InputAdornment, Grid, Stack, Divider
 } from '@mui/material'
 import TimelineIcon from '@mui/icons-material/Timeline'
 import ContrastIcon from '@mui/icons-material/Contrast'
@@ -10,10 +10,9 @@ import RemoveIcon from '@mui/icons-material/Remove'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import { useNavigate } from 'react-router-dom'
 import { useUiPrefs } from '../contexts/UiPrefsContext'
-import { Stepper, Step, StepLabel, StepConnector, stepConnectorClasses, useTheme } from '@mui/material'
-import CheckIcon from '@mui/icons-material/Check'
-import WizardProgress from "../components/common/WizardProgress";
-
+import WizardProgress from "../components/common/WizardProgress"
+import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar } from 'recharts'
+import occupations from '../data/occupationsPensions.json'
 
 export default function HomePage() {
     const navigate = useNavigate()
@@ -36,11 +35,33 @@ export default function HomePage() {
         setExpectedPension(val)
         setError(validate(val))
     }
+
     const onBlur = () => setError(validate(expectedPension))
     const canGo = useMemo(() => validate(expectedPension) === '', [expectedPension])
+
     const startSimulation = () => {
         if (!canGo) { setError(validate(expectedPension)); return }
         navigate('/simulator', { state: { expectedPension: Number(expectedPension) } })
+    }
+
+    const nf = useMemo(() => new Intl.NumberFormat('pl-PL', {
+        style: 'currency', currency: 'PLN', maximumFractionDigits: 2
+    }), [])
+
+    const chartData = useMemo(() =>
+        occupations.map(o => ({ ...o, avg: (o.female + o.male) / 2 })), [])
+
+    const tooltipContent = ({ active, payload, label }) => {
+        if (!active || !payload || !payload.length) return null
+        const p = payload[0].payload
+        return (
+            <Paper sx={{ p: 1.25 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{label}</Typography>
+                <Typography variant="body2">Średnia: {nf.format(p.avg)}</Typography>
+                <Typography variant="body2">Mężczyźni: {nf.format(p.male)}</Typography>
+                <Typography variant="body2">Kobiety: {nf.format(p.female)}</Typography>
+            </Paper>
+        )
     }
 
     return (
@@ -69,7 +90,6 @@ export default function HomePage() {
                     justifyContent: 'center'
                 }}
             >
-
                 <Container maxWidth={false} sx={{ px: { xs: 2, md: 3 } }}>
                     <Box
                         sx={{
@@ -117,13 +137,12 @@ export default function HomePage() {
                         <WizardProgress current={1} steps={4} />
 
                         <Grid container columnSpacing={3} rowSpacing={3} alignItems="stretch" sx={{ flexWrap: { xs: 'wrap', md: 'nowrap' } }}>
-                            <Grid item xs={12} md={8} sx={{ minWidth: 0, flexBasis: { md: '65%' }, maxWidth: { md: '65%' } }}>
+                            <Grid item xs={12} md={8}>
                                 <Paper
                                     elevation={0}
                                     sx={{
                                         p: { xs: 3, md: 4 },
                                         borderRadius: 1,
-                                        height: '100%',
                                         bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(20,24,36,0.70)' : 'rgba(255,255,255,0.85)',
                                         backdropFilter: 'saturate(180%) blur(6px)',
                                         boxShadow: (t) => t.shadows[3]
@@ -136,7 +155,7 @@ export default function HomePage() {
                                         Wpisz kwotę brutto, którą chciał(a)byś otrzymywać co miesiąc po przejściu na emeryturę.
                                     </Typography>
 
-                                    <Box sx={{ display: 'grid', gap: 2.25, width: '100%' }}>
+                                    <Box sx={{ display: 'grid', gap: 2.25 }}>
                                         <TextField
                                             placeholder="np. 5200"
                                             label="Kwota oczekiwana (PLN)"
@@ -155,17 +174,33 @@ export default function HomePage() {
                                         <Stack direction="row" spacing={1.25}>
                                             <Button variant="contained" onClick={startSimulation} disabled={!canGo}>Przejdź do symulacji</Button>
                                         </Stack>
+
+                                        <Box sx={{ mt: 2 }}>
+                                            <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>
+                                                Średnie emerytury wg zawodu (K+M)/2
+                                            </Typography>
+                                            <Box sx={{ width: '100%', height: 360 }}>
+                                                <ResponsiveContainer>
+                                                    <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 24 }}>
+                                                        <CartesianGrid strokeDasharray="3 3" />
+                                                        <XAxis dataKey="name" interval={0} angle={-20} textAnchor="end" height={70} tick={{ fontSize: 12 }} />
+                                                        <YAxis tickFormatter={(v) => nf.format(v)} width={90} />
+                                                        <Tooltip content={tooltipContent} />
+                                                        <Bar dataKey="avg" />
+                                                    </BarChart>
+                                                </ResponsiveContainer>
+                                            </Box>
+                                        </Box>
                                     </Box>
                                 </Paper>
                             </Grid>
 
-                            <Grid item xs={12} md={4} sx={{ minWidth: 0, flexBasis: { md: '35%' }, maxWidth: { md: '35%' } }}>
+                            <Grid item xs={12} md={4}>
                                 <Paper
                                     elevation={0}
                                     sx={{
                                         p: { xs: 3, md: 4 },
                                         borderRadius: 1,
-                                        height: '100%',
                                         bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(20,24,36,0.70)' : 'rgba(255,255,255,0.85)',
                                         backdropFilter: 'saturate(180%) blur(6px)',
                                         boxShadow: (t) => t.shadows[3]
@@ -177,7 +212,7 @@ export default function HomePage() {
                                     <Typography variant="h5" sx={{ fontWeight: 900, lineHeight: 1.2, mb: 1.5 }}>
                                         Wydłużenie aktywności o 2 lata może znacząco zwiększyć świadczenie.
                                     </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                    <Typography variant="body2" color="text.secondary">
                                         To tylko przykład edukacyjny. Szczegółowe wyliczenia zobaczysz w wynikach symulacji dla Twoich danych.
                                     </Typography>
                                 </Paper>
@@ -185,12 +220,9 @@ export default function HomePage() {
                         </Grid>
 
                         <Divider sx={{ my: 3, opacity: 0.6 }} />
-
-                        <Box sx={{ mt: 1 }}>
-                            <Typography variant="caption" color="text.secondary">
-                                © ZUS (mock) • Ten plik to prototyp UI do warsztatów — wartości i obliczenia są fikcyjne.
-                            </Typography>
-                        </Box>
+                        <Typography variant="caption" color="text.secondary">
+                            © ZUS (mock) • Prototyp UI — dane i wyliczenia są fikcyjne.
+                        </Typography>
                     </Box>
                 </Container>
             </Box>
