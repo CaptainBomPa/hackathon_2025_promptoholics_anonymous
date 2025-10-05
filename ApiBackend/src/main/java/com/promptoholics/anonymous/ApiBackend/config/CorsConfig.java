@@ -21,19 +21,19 @@ public class CorsConfig implements WebMvcConfigurer {
     @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:3001,http://emerytura.fmroz.me,https://emerytura.fmroz.me}")
     private String allowedOrigins;
 
-    @Bean
-    public WebMvcConfigurer corsConfigurer() {
-        return new WebMvcConfigurer() {
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/**")  // dla wszystkich endpointów
-                        .allowedOrigins(allowedOrigins.split(",")) // localhost + produkcja
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                        .allowedHeaders("*")
-                        .allowCredentials(false); // ustaw true jeśli używasz cookies / auth headerów
-            }
-        };
-    }
+//    @Bean
+//    public WebMvcConfigurer corsConfigurer() {
+//        return new WebMvcConfigurer() {
+//            @Override
+//            public void addCorsMappings(CorsRegistry registry) {
+//                registry.addMapping("/**")  // dla wszystkich endpointów
+//                        .allowedOrigins(allowedOrigins.split(",")) // localhost + produkcja
+//                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+//                        .allowedHeaders("*")
+//                        .allowCredentials(false); // ustaw true jeśli używasz cookies / auth headerów
+//            }
+//        };
+//    }
 
     @Bean
     public CorsFilter corsFilter() {
