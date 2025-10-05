@@ -19,7 +19,22 @@ const initialState = {
       expectedPension: 4500,
     },
     salaryTimeline: {
-      entries: [],
+      entries: [
+        {
+          id: 1,
+          type: 'salary',
+          startDate: new Date('2015-01-01'),
+          endDate: new Date('2024-12-31'),
+          grossAmount: 8500,
+        },
+        {
+          id: 2,
+          type: 'salary',
+          startDate: new Date('2025-01-01'),
+          endDate: new Date('2055-12-31'),
+          grossAmount: 8500,
+        },
+      ],
       useCustomValues: false,
       defaultGrowthRate: 3.5,
     },
@@ -313,6 +328,7 @@ export const DashboardProvider = ({ children, initialData = {} }) => {
       
       try {
         console.log('🧮 Recalculating pension with new parameters...');
+        console.log('📊 Salary timeline entries:', state.parameters.salaryTimeline?.entries);
         
         // Call the calculation service (which now uses real API)
         const result = await calculatePension(state.parameters);

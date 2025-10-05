@@ -52,30 +52,8 @@ const SalaryTimelinePanel = () => {
     grossAmount: '',
   });
 
-  // Mock data - w przyszłości będzie z context
-  const [records, setRecords] = useState([
-    {
-      id: 1,
-      type: 'salary',
-      startDate: new Date('2020-01-01'),
-      endDate: new Date('2022-12-31'),
-      grossAmount: 5000,
-    },
-    {
-      id: 2,
-      type: 'break',
-      startDate: new Date('2023-01-01'),
-      endDate: new Date('2023-06-30'),
-      grossAmount: null,
-    },
-    {
-      id: 3,
-      type: 'salary',
-      startDate: new Date('2023-07-01'),
-      endDate: new Date('2024-12-31'),
-      grossAmount: 7500,
-    },
-  ]);
+  // Get records from context instead of local state
+  const records = salaryTimeline?.entries || [];
 
   const handleAddRecord = () => {
     setEditingRecord(null);
@@ -100,7 +78,10 @@ const SalaryTimelinePanel = () => {
   };
 
   const handleDeleteRecord = (id) => {
-    setRecords(records.filter(record => record.id !== id));
+    const updatedRecords = records.filter(record => record.id !== id);
+    actions.updateSalaryTimeline({
+      entries: updatedRecords
+    });
   };
 
   const handleSaveRecord = () => {
@@ -120,13 +101,15 @@ const SalaryTimelinePanel = () => {
       return;
     }
 
+    let updatedRecords;
+    
     if (editingRecord) {
       // Update existing record
-      setRecords(records.map(record =>
+      updatedRecords = records.map(record =>
         record.id === editingRecord.id
           ? { ...record, ...formData, grossAmount: formData.type === 'break' ? null : Number(formData.grossAmount) }
           : record
-      ));
+      );
     } else {
       // Add new record
       const newRecord = {
@@ -134,8 +117,14 @@ const SalaryTimelinePanel = () => {
         ...formData,
         grossAmount: formData.type === 'break' ? null : Number(formData.grossAmount),
       };
-      setRecords([...records, newRecord]);
+      updatedRecords = [...records, newRecord];
     }
+    
+    // Update context with new records
+    actions.updateSalaryTimeline({
+      entries: updatedRecords
+    });
+    
     setDialogOpen(false);
   };
 
@@ -292,6 +281,9 @@ const SalaryTimelinePanel = () => {
           </Typography>
           <Typography variant="body2" sx={{ color: zusColors.dark, opacity: 0.8 }}>
             • Łączna liczba rekordów: {records.length}
+          </Typography>
+          <Typography variant="body2" sx={{ color: zusColors.success, fontWeight: 600, mt: 1 }}>
+            ✅ Zmiany w timeline automatycznie wpływają na kalkulację emerytury
           </Typography>
         </Box>
 
