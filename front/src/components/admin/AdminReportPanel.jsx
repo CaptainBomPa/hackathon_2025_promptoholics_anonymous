@@ -56,8 +56,10 @@ const AdminReportPanel = () => {
       );
 
       if (result.success) {
+        console.log('Admin report data loaded:', result.data);
         setReportData(result.data || []);
       } else {
+        console.error('Failed to load admin report data:', result.error);
         setError(result.error?.userMessage || 'Błąd podczas pobierania danych');
         setReportData([]);
       }
@@ -139,14 +141,51 @@ const AdminReportPanel = () => {
     />
   );
 
-  // Calculate summary statistics
+  // Helper function to calculate median
+  const calculateMedian = (values) => {
+    if (values.length === 0) return 0;
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 0 
+      ? (sorted[mid - 1] + sorted[mid]) / 2 
+      : sorted[mid];
+  };
+
+  // Calculate summary statistics based on actual data
   const totalSimulations = reportData.length;
-  const withSickLeave = reportData.filter(item => item.sickLeave).length;
+  const withSickLeave = reportData.filter(item => item.includedSicknessPeriods === true).length;
   const sickLeavePercentage = totalSimulations > 0 ? Math.round((withSickLeave / totalSimulations) * 100) : 0;
-  const salaries = reportData.map(item => item.salary).filter(s => s != null).sort((a, b) => a - b);
-  const expectedPensions = reportData.map(item => item.expectedPension).filter(p => p != null).sort((a, b) => a - b);
-  const medianSalary = salaries.length > 0 ? salaries[Math.floor(salaries.length / 2)] : 0;
-  const medianExpected = expectedPensions.length > 0 ? expectedPensions[Math.floor(expectedPensions.length / 2)] : 0;
+  
+  // Extract and clean salary data (backend uses 'salaryAmount')
+  const salaries = reportData
+    .map(item => item.salaryAmount)
+    .filter(s => s != null && s > 0);
+  
+  // Extract and clean expected pension data (backend uses 'expectedPension')
+  const expectedPensions = reportData
+    .map(item => item.expectedPension)
+    .filter(p => p != null && p > 0);
+  
+  const medianSalary = calculateMedian(salaries);
+  const medianExpected = calculateMedian(expectedPensions);
+  
+  // Additional statistics
+  const averageSalary = salaries.length > 0 ? salaries.reduce((sum, s) => sum + s, 0) / salaries.length : 0;
+  const averageExpected = expectedPensions.length > 0 ? expectedPensions.reduce((sum, p) => sum + p, 0) / expectedPensions.length : 0;
+  
+  // Debug info
+  console.log('Admin panel statistics:', {
+    totalSimulations,
+    withSickLeave,
+    sickLeavePercentage,
+    salariesCount: salaries.length,
+    medianSalary,
+    averageSalary,
+    expectedPensionsCount: expectedPensions.length,
+    medianExpected,
+    averageExpected,
+    sampleData: reportData.slice(0, 2) // First 2 records for debugging
+  });
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={pl}>
@@ -344,17 +383,17 @@ const AdminReportPanel = () => {
                     <TableCell sx={{ fontFamily: 'monospace' }}>{row.age}</TableCell>
                     <TableCell>{getGenderChip(row.gender)}</TableCell>
                     <TableCell sx={{ fontFamily: 'monospace' }}>
-                      {formatCurrency(row.salary)}
+                      {formatCurrency(row.salaryAmount)}
                     </TableCell>
-                    <TableCell>{getSickLeaveChip(row.sickLeave)}</TableCell>
+                    <TableCell>{getSickLeaveChip(row.includedSicknessPeriods)}</TableCell>
                     <TableCell sx={{ fontFamily: 'monospace' }}>
-                      {formatCurrency(row.zusAccount)}
+                      {formatCurrency(row.accumulatedFundsTotal)}
                     </TableCell>
                     <TableCell sx={{ fontFamily: 'monospace' }}>
                       {formatCurrency(row.actualPension)}
                     </TableCell>
                     <TableCell sx={{ fontFamily: 'monospace' }}>
-                      {formatCurrency(row.realPension)}
+                      {formatCurrency(row.inflationAdjustedPension)}
                     </TableCell>
                     <TableCell>{row.postalCode || '—'}</TableCell>
                   </TableRow>
