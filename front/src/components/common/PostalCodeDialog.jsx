@@ -107,7 +107,7 @@ const PostalCodeDialog = ({ open, onClose, calculationId }) => {
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: 3,
+          borderRadius: 1,
         }
       }}
     >
@@ -151,7 +151,7 @@ const PostalCodeDialog = ({ open, onClose, calculationId }) => {
           autoFocus
           sx={{
             '& .MuiOutlinedInput-root': {
-              borderRadius: 2,
+              borderRadius: 1,
               '&.Mui-focused fieldset': {
                 borderColor: zusColors.primary,
               }

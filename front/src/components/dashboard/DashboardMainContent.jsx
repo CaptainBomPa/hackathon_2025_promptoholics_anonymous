@@ -12,12 +12,12 @@ import {
 } from '@mui/material';
 import {
     TrendingUp,
-    AccountBalance,
     Assessment,
     Timeline,
     Work,
     LocalHospital,
 } from '@mui/icons-material';
+import MonetizationOnIcon from '@mui/icons-material/MonetizationOn'
 import { useDashboard } from '../../contexts/DashboardContext';
 import { zusColors } from '../../constants/zus-colors';
 import { formatCurrency } from '../../utils/pension-formatting';
@@ -65,7 +65,7 @@ const DashboardMainContent = () => {
                 }}
                 aria-label="Podsumowanie wyników"
             >
-                {/* Header */}
+                {/* Header – ujednolicony */}
                 <Box
                     sx={{
                         display: 'flex',
@@ -77,38 +77,12 @@ const DashboardMainContent = () => {
                         minWidth: 0,
                     }}
                 >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0 }}>
-                        <Box
-                            sx={{
-                                p: 1.25,
-                                borderRadius: 1,
-                                background: `linear-gradient(135deg, ${zusColors.primary} 0%, ${zusColors.info} 100%)`,
-                                boxShadow: `0 6px 20px ${zusColors.primary}30`,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexShrink: 0,
-                            }}
-                        >
-                            <Assessment sx={{ color: 'white', fontSize: 26 }} />
-                        </Box>
-                        <Typography
-                            variant="h5"
-                            sx={{
-                                fontWeight: 800,
-                                letterSpacing: 0.2,
-                                background: `linear-gradient(135deg, ${zusColors.primary} 0%, ${zusColors.dark} 100%)`,
-                                backgroundClip: 'text',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                            }}
-                        >
-                            Podsumowanie wyników
-                        </Typography>
-                    </Box>
+                    <SectionHeader
+                        icon={<Assessment />}
+                        title="Podsumowanie wyników"
+                        from={zusColors.primary}
+                        to={zusColors.info}
+                    />
 
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         <Tooltip
@@ -128,6 +102,7 @@ const DashboardMainContent = () => {
                                     whiteSpace: 'nowrap',
                                 }}
                             >
+                                Aktualne parametry
                             </Typography>
                         </Tooltip>
                     </Box>
@@ -152,7 +127,7 @@ const DashboardMainContent = () => {
                         title="Emerytura rzeczywista"
                         value={state.results.realAmountDeflated ?? 2950}
                         subtitle="w dzisiejszych cenach"
-                        icon={<AccountBalance />}
+                        icon={<MonetizationOnIcon />}          // 💰 spójny motyw
                         color={zusColors.info}
                         loading={state.uiState.isCalculating}
                         valueFormatter={(v) => formatCurrency(Math.round(v))}
@@ -201,20 +176,6 @@ const DashboardMainContent = () => {
 
             {/* Visualizations Section */}
             <Box sx={{ mb: 4 }}>
-                <Box
-                    sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 2,
-                        mb: 4,
-                        p: 2,
-                        borderRadius: 1,
-                        background: `linear-gradient(90deg, ${zusColors.info}10 0%, ${zusColors.primary}10 50%, ${zusColors.secondary}10 100%)`,
-                        border: `1px solid ${zusColors.info}30`,
-                    }}
-                >
-                </Box>
-
                 {/* ZUS Account Growth Chart */}
                 <Box sx={{ mb: 4 }}>
                     <Paper
@@ -235,21 +196,13 @@ const DashboardMainContent = () => {
                             },
                         }}
                     >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                            <Box
-                                sx={{
-                                    p: 1,
-                                    borderRadius: 1,
-                                    background: `linear-gradient(135deg, ${zusColors.primary} 0%, ${zusColors.success} 100%)`,
-                                    boxShadow: `0 4px 12px ${zusColors.primary}30`,
-                                }}
-                            >
-                                <AccountBalance sx={{ color: 'white', fontSize: 24 }} />
-                            </Box>
-                            <Typography variant="h6" sx={{ fontWeight: 600, color: zusColors.dark }}>
-                                Wzrost środków na koncie ZUS
-                            </Typography>
-                        </Box>
+                        <SectionHeader
+                            icon={<MonetizationOnIcon />}
+                            title="Wzrost środków na koncie ZUS"
+                            from={zusColors.primary}
+                            to={zusColors.success}
+                            sx={{ mb: 3 }}
+                        />
                         <Box sx={{ width: '100%' }}>
                             <ZUSAccountGrowthChart
                                 data={state.results.accountGrowthProjection}
@@ -279,21 +232,13 @@ const DashboardMainContent = () => {
                             },
                         }}
                     >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                            <Box
-                                sx={{
-                                    p: 1,
-                                    borderRadius: 1,
-                                    background: `linear-gradient(135deg, ${zusColors.info} 0%, ${zusColors.secondary} 100%)`,
-                                    boxShadow: `0 4px 12px ${zusColors.info}30`,
-                                }}
-                            >
-                                <Timeline sx={{ color: 'white', fontSize: 24 }} />
-                            </Box>
-                            <Typography variant="h6" sx={{ fontWeight: 600, color: zusColors.dark }}>
-                                Projekcja wynagrodzeń
-                            </Typography>
-                        </Box>
+                        <SectionHeader
+                            icon={<Timeline />}
+                            title="Projekcja wynagrodzeń"
+                            from={zusColors.info}
+                            to={zusColors.secondary}
+                            sx={{ mb: 3 }}
+                        />
                         <Box sx={{ width: '100%' }}>
                             <SalaryProjectionChart
                                 data={state.results.salaryProjection}
@@ -306,11 +251,11 @@ const DashboardMainContent = () => {
 
             {/* Summary Cards Section - Sick Leave and Work After Retirement */}
             {(state.parameters.sickLeave?.mode !== 'none' || state.parameters.zusAccount?.workAfterRetirement > 0) && (
-                <Box sx={{ 
+                <Box sx={{
                     mt: 4,
                     display: 'grid',
-                    gridTemplateColumns: { 
-                        xs: '1fr', 
+                    gridTemplateColumns: {
+                        xs: '1fr',
                         sm: '1fr 1fr'
                     },
                     gap: 3,
@@ -320,7 +265,7 @@ const DashboardMainContent = () => {
                 }}>
                     {/* Sick Leave Card */}
                     {state.parameters.sickLeave?.mode !== 'none' && (
-                        <SickLeaveCard 
+                        <SickLeaveCard
                             sickLeaveMode={state.parameters.sickLeave?.mode}
                             customDays={state.parameters.sickLeave?.customDays}
                             currentPension={state.results?.actualAmountPLN}
@@ -329,10 +274,10 @@ const DashboardMainContent = () => {
                             loading={state.uiState.isCalculating}
                         />
                     )}
-                    
+
                     {/* Work After Retirement Card */}
                     {state.parameters.zusAccount?.workAfterRetirement > 0 && (
-                        <WorkAfterRetirementCard 
+                        <WorkAfterRetirementCard
                             workAfterRetirement={state.parameters.zusAccount.workAfterRetirement}
                             postponedData={state.results?.ifPostponedYears}
                             currentPension={state.results?.actualAmountPLN}
@@ -388,10 +333,10 @@ const MetricCard = ({
     // Extract numeric value for animation
     const numericValue = Number(value) || 0;
     const decimals = isPercentage ? 1 : 0;
-    
+
     // Use count-up animation when not loading
     const animatedValue = useCountUp(numericValue, 1500, decimals, !loading);
-    
+
     const formatVal = (v) => {
         if (loading) return '';
         if (isPercentage) {
@@ -426,26 +371,14 @@ const MetricCard = ({
         >
             <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, minWidth: 0 }}>
-                    <Box
-                        sx={{
-                            mr: 1.5,
-                            width: 44,
-                            height: 44,
-                            borderRadius: '50%',
-                            display: 'grid',
-                            placeItems: 'center',
-                            background: `linear-gradient(135deg, ${color}, ${zusColors.dark})`,
-                            boxShadow: `0 6px 16px ${color}40`,
-                            color: '#fff',
-                            flexShrink: 0,
-                        }}
-                    >
+                    <IconBadge from={color} to={zusColors.dark}>
                         {icon || <Assessment />}
-                    </Box>
+                    </IconBadge>
                     <Typography
                         variant="body2"
                         sx={{
-                            fontWeight: 700,
+                            ml: 1.5,
+                            fontWeight: 800,
                             letterSpacing: 0.2,
                             color: zusColors.dark,
                             opacity: 0.9,
@@ -511,38 +444,38 @@ const SickLeaveCard = ({ sickLeaveMode, customDays, currentPension, wageWithSick
         if (sickLeaveMode === 'none') {
             return { impact: 0, description: 'Zwolnienia nie są uwzględniane' };
         }
-        
+
         if (sickLeaveMode === 'averaged') {
             // Średnia krajowa ~12-15 dni rocznie, wpływ ~2-4%
             const averageImpact = (currentPension || 0) * 0.03; // 3% średni wpływ
-            return { 
-                impact: Math.round(averageImpact), 
-                description: 'Średnia krajowa: ~12-15 dni/rok' 
+            return {
+                impact: Math.round(averageImpact),
+                description: 'Średnia krajowa: ~12-15 dni/rok'
             };
         }
-        
+
         if (sickLeaveMode === 'custom' && customDays > 0) {
             // Szacunkowy wpływ na podstawie liczby dni
             // Każdy dzień chorobowy to ~0.27% rocznego wynagrodzenia mniej składek
             const dailyImpact = (currentPension || 0) * 0.0027;
             const totalImpact = dailyImpact * customDays;
-            return { 
-                impact: Math.round(totalImpact), 
-                description: `${customDays} dni rocznie` 
+            return {
+                impact: Math.round(totalImpact),
+                description: `${customDays} dni rocznie`
             };
         }
-        
+
         return { impact: 0, description: 'Brak danych' };
     };
 
     const { impact, description } = calculateSickLeaveImpact();
     const percent = currentPension > 0 ? Math.round((impact / currentPension) * 100) : 0;
-    
+
     // Użyj danych z API jeśli dostępne
-    const actualImpact = wageWithSickLeave && wageWithoutSickLeave 
+    const actualImpact = wageWithSickLeave && wageWithoutSickLeave
         ? Math.round(wageWithoutSickLeave - wageWithSickLeave)
         : impact;
-    
+
     const actualPercent = wageWithSickLeave && wageWithoutSickLeave && wageWithoutSickLeave > 0
         ? Math.round(((wageWithoutSickLeave - wageWithSickLeave) / wageWithoutSickLeave) * 100)
         : percent;
@@ -635,7 +568,7 @@ const SickLeaveCard = ({ sickLeaveMode, customDays, currentPension, wageWithSick
                                 lineHeight: 1.15,
                             }}
                         >
-                            {actualImpact > 0 
+                            {actualImpact > 0
                                 ? `-${actualImpact.toLocaleString('pl-PL')} PLN / mies.`
                                 : 'Brak wpływu'
                             }
@@ -772,34 +705,89 @@ const WorkAfterRetirementCard = ({ workAfterRetirement, postponedData, currentPe
                 </Box>
             ) : (
                 <Box>
-                    <Box
-                        sx={{
-                            p: 2,
-                            borderRadius: 2,
-                            border: "0px",
-                            bgcolor: '#fff',
-                        }}
-                    >
-                        <Typography variant="caption" sx={{ color: `${zusColors.dark}99`, fontWeight: 700 }}>
-                            Wzrost względem obecnej
-                        </Typography>
-                        <Typography
-                            variant="h5"
-                            sx={{
-                                mt: 0.5,
-                                fontWeight: 900,
-                                color: zusColors.primary,
-                                lineHeight: 1.15,
-                            }}
-                        >
-                            +{diff.toLocaleString('pl-PL')} PLN / mies.
-                        </Typography>
-                    </Box>
+
+                            <Box
+                                sx={{
+                                    p: 2,
+                                    borderRadius: 2,
+                                    border: "0px",
+                                    bgcolor: '#fff',
+                                }}
+                            >
+                                <Typography variant="caption" sx={{ color: `${zusColors.dark}99`, fontWeight: 700 }}>
+                                    Wzrost względem obecnej
+                                </Typography>
+                                <Typography
+                                    variant="h5"
+                                    sx={{
+                                        mt: 0.5,
+                                        fontWeight: 900,
+                                        color: zusColors.primary,
+                                        lineHeight: 1.15,
+                                    }}
+                                >
+                                    +{diff.toLocaleString('pl-PL')} PLN / mies.
+                                </Typography>
+
+                                                </Box>
                 </Box>
             )}
         </Paper>
     );
 };
 
+/* ---------- WSPÓLNE, SPÓJNE KOMPONENTY STYLU ---------- */
+
+const IconBadge = ({ children, from, to, size = 44 }) => (
+    <Box
+        sx={{
+            width: size,
+            height: size,
+            borderRadius: 2,
+            display: 'grid',
+            placeItems: 'center',
+            background: `linear-gradient(135deg, ${from}, ${to})`,
+            boxShadow: `0 6px 18px ${from}44`,
+            color: '#fff',
+            flexShrink: 0,
+        }}
+    >
+        {/* normalizujemy rozmiar ikon wewnątrz */}
+        {React.cloneElement(children, { sx: { fontSize: size * 0.55, color: 'white' } })}
+    </Box>
+);
+
+const SectionHeader = ({ icon, title, from, to, compact = false, sx }) => (
+    <Box
+        sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+            minWidth: 0,
+            ...sx,
+        }}
+    >
+        <IconBadge from={from} to={to} size={compact ? 40 : 48}>
+            {icon}
+        </IconBadge>
+        <Typography
+            variant={compact ? 'subtitle1' : 'h6'}
+            sx={{
+                fontWeight: 800,
+                letterSpacing: 0.2,
+                background: `linear-gradient(135deg, ${from} 0%, ${zusColors.dark} 100%)`,
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+            }}
+            title={title}
+        >
+            {title}
+        </Typography>
+    </Box>
+);
 
 export default DashboardMainContent;
